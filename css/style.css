@@ -284,6 +284,17 @@ body {
 .marker-dot.c4 { background: #BF5AF2; }
 .marker-dot.c5 { background: #64D2FF; }
 
+/* Active/selected marker glow */
+.marker-dot.active {
+    transform: scale(1.2);
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.35), 0 1px 4px rgba(0,0,0,0.5);
+}
+.marker-dot.active.c1 { box-shadow: 0 0 0 4px rgba(255, 69, 58, 0.4), 0 0 12px rgba(255, 69, 58, 0.3); }
+.marker-dot.active.c2 { box-shadow: 0 0 0 4px rgba(48, 209, 88, 0.4), 0 0 12px rgba(48, 209, 88, 0.3); }
+.marker-dot.active.c3 { box-shadow: 0 0 0 4px rgba(255, 214, 10, 0.4), 0 0 12px rgba(255, 214, 10, 0.3); }
+.marker-dot.active.c4 { box-shadow: 0 0 0 4px rgba(191, 90, 242, 0.4), 0 0 12px rgba(191, 90, 242, 0.3); }
+.marker-dot.active.c5 { box-shadow: 0 0 0 4px rgba(100, 210, 255, 0.4), 0 0 12px rgba(100, 210, 255, 0.3); }
+
 /* ==================== Yardage popup ==================== */
 .yard-popup {
     background: rgba(0, 0, 0, 0.85);

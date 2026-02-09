@@ -69,6 +69,7 @@ function initApp(MAPTILER_KEY) {
     let isFollowing = true;
 
     const targets = [];
+    let activeTarget = null; // currently selected marker
     const MAX_TARGETS = 5;
     const DOT_CLASSES = ['c1', 'c2', 'c3', 'c4', 'c5'];
     const LINE_COLORS = ['#FF453A', '#30D158', '#FFD60A', '#BF5AF2', '#64D2FF'];
@@ -397,6 +398,24 @@ function initApp(MAPTILER_KEY) {
         );
     }
 
+    function selectTarget(t) {
+        // Remove active glow from previous
+        if (activeTarget && activeTarget.dotEl) {
+            activeTarget.dotEl.classList.remove('active');
+        }
+        activeTarget = t;
+        // Add active glow to new selection
+        if (t && t.dotEl) {
+            t.dotEl.classList.add('active');
+        }
+        // Update sidebar for newly selected marker
+        if (t && playerLocation) {
+            const lngLat = t.marker.getLngLat();
+            const dist = calcDistance(playerLocation, [lngLat.lng, lngLat.lat]);
+            updateSidebar(Math.round(dist), lngLat.lng, lngLat.lat);
+        }
+    }
+
     function updateTargetDistance(t) {
         if (!playerLocation) return;
         const lngLat = t.marker.getLngLat();
@@ -405,7 +424,7 @@ function initApp(MAPTILER_KEY) {
         t.popup.setHTML(`<div class="yard-popup">${yards} yd</div>`);
         updateLine(t.lineIdx, [playerLocation.lng, playerLocation.lat], [lngLat.lng, lngLat.lat]);
 
-        if (targets.length > 0 && t === targets[targets.length - 1]) {
+        if (t === activeTarget) {
             updateSidebar(yards, lngLat.lng, lngLat.lat);
         }
     }
@@ -423,6 +442,7 @@ function initApp(MAPTILER_KEY) {
 
         if (targets.length >= MAX_TARGETS) {
             const oldest = targets.shift();
+            if (activeTarget === oldest) activeTarget = null;
             oldest.marker.remove();
             oldest.popup.remove();
             removeLine(oldest.lineIdx);
@@ -457,11 +477,18 @@ function initApp(MAPTILER_KEY) {
         addLine(lineIdx, LINE_COLORS[idx % 5]);
         updateLine(lineIdx, [playerLocation.lng, playerLocation.lat], [lngLat.lng, lngLat.lat]);
 
-        const target = { marker, popup, lineIdx };
+        const target = { marker, popup, lineIdx, dotEl };
         targets.push(target);
+
+        // Tap marker to select it
+        wrapper.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectTarget(target);
+        });
 
         marker.on('dragstart', () => {
             dotEl.classList.add('dragging');
+            selectTarget(target);
         });
         marker.on('drag', () => {
             const pos = marker.getLngLat();
@@ -481,25 +508,58 @@ function initApp(MAPTILER_KEY) {
         });
 
         updateClearButton();
-        updateSidebar(yards, lngLat.lng, lngLat.lat);
+
+        // Auto-select the newly placed marker
+        selectTarget(target);
 
         if (navigator.vibrate) navigator.vibrate(15);
     }
 
     // ============================================================
-    // Map tap handler
+    // Long-press to place marker (500ms hold)
     // ============================================================
-    map.on('click', (e) => {
-        const { x, y } = e.point;
-        const ripple = document.createElement('div');
-        ripple.className = 'tap-ripple';
-        ripple.style.left = x + 'px';
-        ripple.style.top = y + 'px';
-        document.body.appendChild(ripple);
-        setTimeout(() => ripple.remove(), 600);
+    const LONG_PRESS_MS = 500;
+    const MOVE_THRESHOLD = 10; // px — cancel if finger moves too far
+    let lpTimer = null;
+    let lpStart = null;
 
-        addTarget(e.lngLat);
-    });
+    map.getCanvas().addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        const touch = e.touches[0];
+        lpStart = { x: touch.clientX, y: touch.clientY };
+        lpTimer = setTimeout(() => {
+            // Convert screen point to map lngLat
+            const point = map.unproject([lpStart.x, lpStart.y]);
+            // Ripple feedback
+            const ripple = document.createElement('div');
+            ripple.className = 'tap-ripple';
+            ripple.style.left = lpStart.x + 'px';
+            ripple.style.top = lpStart.y + 'px';
+            document.body.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
+            addTarget(point);
+            lpTimer = null;
+        }, LONG_PRESS_MS);
+    }, { passive: true });
+
+    map.getCanvas().addEventListener('touchmove', (e) => {
+        if (!lpTimer || !lpStart) return;
+        const touch = e.touches[0];
+        const dx = touch.clientX - lpStart.x;
+        const dy = touch.clientY - lpStart.y;
+        if (Math.sqrt(dx * dx + dy * dy) > MOVE_THRESHOLD) {
+            clearTimeout(lpTimer);
+            lpTimer = null;
+        }
+    }, { passive: true });
+
+    map.getCanvas().addEventListener('touchend', () => {
+        if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; }
+    }, { passive: true });
+
+    map.getCanvas().addEventListener('touchcancel', () => {
+        if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; }
+    }, { passive: true });
 
     // ============================================================
     // Clear all
@@ -511,6 +571,7 @@ function initApp(MAPTILER_KEY) {
             t.popup.remove();
             removeLine(t.lineIdx);
         }
+        activeTarget = null;
         updateClearButton();
         document.getElementById('sidebar').classList.remove('visible');
     }
