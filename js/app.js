@@ -241,8 +241,9 @@ function initApp(MAPTILER_KEY) {
             const url = `https://api.maptiler.com/elevation/${lng},${lat}.json?key=${MAPTILER_KEY}`;
             const resp = await fetch(url);
             const data = await resp.json();
-            if (data.results && data.results.length > 0) {
-                playerElevation = data.results[0].elevation;
+            // Response is [[lng, lat, elevation]]
+            if (Array.isArray(data) && data.length > 0 && data[0].length >= 3) {
+                playerElevation = data[0][2]; // meters
             }
         } catch (e) {
             console.warn('Player elevation fetch failed:', e);
@@ -254,8 +255,9 @@ function initApp(MAPTILER_KEY) {
             const url = `https://api.maptiler.com/elevation/${lng},${lat}.json?key=${MAPTILER_KEY}`;
             const resp = await fetch(url);
             const data = await resp.json();
-            if (data.results && data.results.length > 0) {
-                return data.results[0].elevation;
+            // Response is [[lng, lat, elevation]]
+            if (Array.isArray(data) && data.length > 0 && data[0].length >= 3) {
+                return data[0][2]; // meters
             }
         } catch (e) {
             console.warn('Elevation fetch failed:', e);
