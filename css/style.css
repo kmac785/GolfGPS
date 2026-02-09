@@ -1,0 +1,436 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #000;
+    touch-action: manipulation;
+}
+
+#map { width: 100vw; height: 100vh; }
+
+/* Hide MapLibre default UI */
+.maplibregl-ctrl-logo { display: none !important; }
+.maplibregl-ctrl-attrib { font-size: 9px !important; background: rgba(0,0,0,0.4) !important; }
+.maplibregl-ctrl-attrib a { color: rgba(255,255,255,0.5) !important; }
+.maplibregl-ctrl-group { display: none !important; }
+
+/* ==================== Setup overlay ==================== */
+.setup-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.4s ease;
+}
+.setup-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+.setup-card {
+    text-align: center;
+    padding: 32px 28px;
+    max-width: 340px;
+    width: 100%;
+}
+.setup-icon svg {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
+}
+.setup-card h1 {
+    color: #fff;
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+.setup-card p {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 24px;
+}
+.setup-card p a {
+    color: #64D2FF;
+    text-decoration: none;
+}
+.setup-card input {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    font-size: 16px;
+    font-family: inherit;
+    outline: none;
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+}
+.setup-card input:focus {
+    border-color: rgba(100, 210, 255, 0.5);
+}
+.setup-card input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+.setup-card button {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    background: #007AFF;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+}
+.setup-card button:active {
+    transform: scale(0.98);
+    background: #0062cc;
+}
+
+/* ==================== GPS status banner ==================== */
+.gps-status {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 10px 16px;
+    padding-top: max(env(safe-area-inset-top), 10px);
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+    z-index: 1001;
+    transition: transform 0.4s ease, opacity 0.4s ease;
+}
+.gps-status.hidden {
+    transform: translateY(-100%);
+    opacity: 0;
+    pointer-events: none;
+}
+.gps-status .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+.gps-status .dot.searching { background: #FFD60A; animation: pulse-dot 1s infinite; }
+.gps-status .dot.locked { background: #30D158; }
+@keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* ==================== Settings button ==================== */
+.settings-btn {
+    position: fixed;
+    top: max(env(safe-area-inset-top), 10px);
+    right: 12px;
+    margin-top: 6px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1000;
+    transition: background 0.2s;
+}
+.settings-btn:active { background: rgba(0, 0, 0, 0.8); }
+.settings-btn svg { width: 18px; height: 18px; }
+
+/* ==================== Re-center button ==================== */
+.recenter-btn {
+    position: fixed;
+    bottom: 32px;
+    right: 16px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1000;
+    transition: background 0.2s, transform 0.15s;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+.recenter-btn:active { transform: scale(0.92); background: rgba(0, 0, 0, 0.9); }
+.recenter-btn svg { width: 22px; height: 22px; }
+
+/* ==================== North button ==================== */
+.north-btn {
+    position: fixed;
+    bottom: 90px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    color: #fff;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1000;
+    transition: background 0.2s, transform 0.3s;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+.north-btn:active { transform: scale(0.9); }
+.north-btn.visible { display: flex; }
+.north-btn .north-arrow {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.2s ease;
+}
+
+/* ==================== Clear ALL button ==================== */
+.clear-btn {
+    position: fixed;
+    bottom: 32px;
+    left: 16px;
+    height: 40px;
+    padding: 0 16px;
+    border-radius: 20px;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    z-index: 1000;
+    transition: background 0.2s, transform 0.15s;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+.clear-btn:active { transform: scale(0.95); background: rgba(0, 0, 0, 0.9); }
+.clear-btn.visible { display: flex; }
+.clear-btn svg { width: 14px; height: 14px; }
+
+/* ==================== Marker count badge ==================== */
+.marker-count {
+    position: fixed;
+    bottom: 78px;
+    left: 16px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    display: none;
+    z-index: 1000;
+}
+.marker-count.visible { display: block; }
+
+/* ==================== Tap ripple ==================== */
+.tap-ripple {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    pointer-events: none;
+    z-index: 999;
+    transform: translate(-50%, -50%) scale(0);
+    animation: ripple-out 0.5s ease-out forwards;
+}
+@keyframes ripple-out {
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+}
+
+/* ==================== Custom marker dots ==================== */
+.marker-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    cursor: grab;
+    transition: transform 0.15s ease;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+.marker-dot:active { cursor: grabbing; }
+.marker-dot.dragging { transform: scale(1.4); }
+.marker-dot.c1 { background: #FF453A; }
+.marker-dot.c2 { background: #30D158; }
+.marker-dot.c3 { background: #FFD60A; }
+.marker-dot.c4 { background: #BF5AF2; }
+.marker-dot.c5 { background: #64D2FF; }
+
+/* ==================== Yardage popup ==================== */
+.yard-popup {
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+.maplibregl-popup-content {
+    background: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+}
+.maplibregl-popup-tip {
+    border-top-color: rgba(0, 0, 0, 0.85) !important;
+}
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+    border-top-color: rgba(0, 0, 0, 0.85) !important;
+}
+.maplibregl-popup-anchor-top .maplibregl-popup-tip {
+    border-bottom-color: rgba(0, 0, 0, 0.85) !important;
+}
+
+/* ==================== Player dot ==================== */
+.player-dot-outer {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(0, 122, 255, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse-ring 2s ease-out infinite;
+}
+.player-dot-inner {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #007AFF;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+@keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.4); }
+    70% { box-shadow: 0 0 0 12px rgba(0, 122, 255, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 122, 255, 0); }
+}
+
+/* ==================== Wind/Elevation sidebar ==================== */
+.sidebar {
+    position: fixed;
+    top: 50%;
+    left: 10px;
+    transform: translateY(-50%);
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    pointer-events: none;
+}
+.sidebar.visible { display: flex; }
+
+.sidebar-card {
+    background: rgba(0, 0, 0, 0.82);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 10px 12px;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-width: 90px;
+}
+
+.sidebar-card .card-label {
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: rgba(255, 255, 255, 0.45);
+    margin-bottom: 4px;
+}
+
+.sidebar-card .card-value {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.1;
+}
+.sidebar-card .card-value .unit {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.5);
+    margin-left: 2px;
+}
+
+.sidebar-card .card-sub {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.4);
+    margin-top: 2px;
+}
+
+/* Wind arrow */
+.wind-arrow-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.wind-arrow {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    transition: transform 0.5s ease;
+}
+.wind-info {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Plays-like card highlight */
+.sidebar-card.plays-like {
+    border-color: rgba(255, 69, 58, 0.35);
+}
+.sidebar-card.plays-like .card-value {
+    color: #FF6961;
+}
+.sidebar-card.plays-like.shorter .card-value {
+    color: #30D158;
+}
+
+/* Elevation change indicator */
+.elev-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+.elev-indicator svg {
+    width: 12px;
+    height: 12px;
+}
+.elev-indicator.uphill svg { color: #FF6961; }
+.elev-indicator.downhill svg { color: #30D158; }

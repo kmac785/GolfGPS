@@ -1,0 +1,557 @@
+// ============================================================
+// API Key Management
+// ============================================================
+const STORAGE_KEY = 'golfgps_maptiler_key';
+
+function getApiKey() {
+    return localStorage.getItem(STORAGE_KEY);
+}
+
+function saveApiKey(key) {
+    localStorage.setItem(STORAGE_KEY, key.trim());
+}
+
+function showSetup() {
+    document.getElementById('setupOverlay').classList.remove('hidden');
+}
+
+function hideSetup() {
+    const overlay = document.getElementById('setupOverlay');
+    overlay.classList.add('hidden');
+    setTimeout(() => { overlay.style.display = 'none'; }, 400);
+}
+
+// Setup overlay handlers
+document.getElementById('saveKeyBtn').addEventListener('click', () => {
+    const key = document.getElementById('apiKeyInput').value.trim();
+    if (!key) return;
+    saveApiKey(key);
+    hideSetup();
+    initApp(key);
+});
+
+document.getElementById('apiKeyInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('saveKeyBtn').click();
+});
+
+// Settings button — re-show setup overlay to change key
+document.getElementById('settingsBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const overlay = document.getElementById('setupOverlay');
+    overlay.style.display = '';
+    overlay.classList.remove('hidden');
+    document.getElementById('apiKeyInput').value = getApiKey() || '';
+});
+
+// ============================================================
+// Boot
+// ============================================================
+const existingKey = getApiKey();
+if (existingKey) {
+    hideSetup();
+    initApp(existingKey);
+}
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js');
+}
+
+// ============================================================
+// Main app
+// ============================================================
+function initApp(MAPTILER_KEY) {
+
+    // State
+    let playerLocation = null;
+    let playerElevation = null;
+    let playerMarker = null;
+    let isFollowing = true;
+
+    const targets = [];
+    const MAX_TARGETS = 5;
+    const DOT_CLASSES = ['c1', 'c2', 'c3', 'c4', 'c5'];
+    const LINE_COLORS = ['#FF453A', '#30D158', '#FFD60A', '#BF5AF2', '#64D2FF'];
+
+    // Wind state
+    let windSpeed = null;
+    let windDeg = null;
+    let windGust = null;
+    let weatherFetchInterval = null;
+
+    // ============================================================
+    // Initialize MapLibre with MapTiler Satellite tiles
+    // ============================================================
+    const map = new maplibregl.Map({
+        container: 'map',
+        style: {
+            version: 8,
+            sources: {
+                'maptiler-satellite': {
+                    type: 'raster',
+                    tiles: [
+                        `https://api.maptiler.com/tiles/satellite-v2/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`
+                    ],
+                    tileSize: 512,
+                    maxzoom: 20,
+                    attribution: '&copy; <a href="https://www.maptiler.com/copyright/" target="_blank">MapTiler</a>'
+                }
+            },
+            layers: [{
+                id: 'satellite',
+                type: 'raster',
+                source: 'maptiler-satellite',
+                minzoom: 0,
+                maxzoom: 20
+            }]
+        },
+        center: [-95.2, 38.9],
+        zoom: 17.5,
+        pitch: 0,
+        bearing: 0,
+        attributionControl: true
+    });
+
+    // ============================================================
+    // Compass / North button
+    // ============================================================
+    const northBtn = document.getElementById('northBtn');
+    map.on('rotate', () => {
+        const bearing = map.getBearing();
+        if (Math.abs(bearing) > 2) {
+            northBtn.classList.add('visible');
+            northBtn.querySelector('.north-arrow').style.transform = `rotate(${-bearing}deg)`;
+        } else {
+            northBtn.classList.remove('visible');
+        }
+    });
+    northBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        map.easeTo({ bearing: 0, duration: 400 });
+    });
+
+    // ============================================================
+    // GPS Tracking
+    // ============================================================
+    function startGPS() {
+        if (!navigator.geolocation) {
+            document.getElementById('gpsText').textContent = 'GPS not available';
+            return;
+        }
+
+        navigator.geolocation.watchPosition(
+            (pos) => {
+                const { latitude, longitude, accuracy } = pos.coords;
+                playerLocation = { lat: latitude, lng: longitude };
+
+                // Update GPS status
+                const statusEl = document.getElementById('gpsStatus');
+                const dotEl = document.getElementById('gpsDot');
+                const textEl = document.getElementById('gpsText');
+                const accYards = Math.round(accuracy * 1.09361);
+                dotEl.className = 'dot locked';
+                textEl.textContent = `GPS Locked — ±${accYards}yd`;
+
+                // Auto-hide GPS status after 3 seconds
+                clearTimeout(window._gpsHideTimer);
+                window._gpsHideTimer = setTimeout(() => {
+                    statusEl.classList.add('hidden');
+                }, 3000);
+
+                // Create or update player marker
+                if (!playerMarker) {
+                    const el = document.createElement('div');
+                    el.className = 'player-dot-outer';
+                    el.innerHTML = '<div class="player-dot-inner"></div>';
+                    playerMarker = new maplibregl.Marker({ element: el })
+                        .setLngLat([longitude, latitude])
+                        .addTo(map);
+
+                    // Initial center
+                    map.flyTo({ center: [longitude, latitude], zoom: 17.5, duration: 1500 });
+
+                    // Fetch weather on first GPS lock
+                    fetchWeather(latitude, longitude);
+                    fetchPlayerElevation(latitude, longitude);
+
+                    // Refresh weather every 5 minutes
+                    weatherFetchInterval = setInterval(() => {
+                        if (playerLocation) {
+                            fetchWeather(playerLocation.lat, playerLocation.lng);
+                            fetchPlayerElevation(playerLocation.lat, playerLocation.lng);
+                        }
+                    }, 300000);
+                } else {
+                    playerMarker.setLngLat([longitude, latitude]);
+                }
+
+                if (isFollowing) {
+                    map.easeTo({ center: [longitude, latitude], duration: 500 });
+                }
+
+                // Update all target distances
+                targets.forEach(t => updateTargetDistance(t));
+            },
+            (err) => {
+                const textEl = document.getElementById('gpsText');
+                textEl.textContent = 'GPS Error: ' + err.message;
+            },
+            {
+                enableHighAccuracy: true,
+                maximumAge: 2000,
+                timeout: 10000
+            }
+        );
+    }
+
+    // ============================================================
+    // Weather (Open-Meteo — free, no key)
+    // ============================================================
+    async function fetchWeather(lat, lng) {
+        try {
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m&wind_speed_unit=mph`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+
+            if (data.current) {
+                windSpeed = Math.round(data.current.wind_speed_10m);
+                windDeg = data.current.wind_direction_10m;
+                windGust = data.current.wind_gusts_10m ? Math.round(data.current.wind_gusts_10m) : null;
+
+                document.getElementById('windSpeed').innerHTML = `${windSpeed}<span class="unit">mph</span>`;
+                document.getElementById('windDir').textContent = degToCardinal(windDeg) + (windGust ? ` · Gust ${windGust}` : '');
+                document.getElementById('windArrow').style.transform = `rotate(${windDeg}deg)`;
+            }
+        } catch (e) {
+            console.warn('Weather fetch failed:', e);
+        }
+    }
+
+    function degToCardinal(deg) {
+        const dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
+                      'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+        return dirs[Math.round(deg / 22.5) % 16];
+    }
+
+    // ============================================================
+    // Elevation (MapTiler)
+    // ============================================================
+    async function fetchPlayerElevation(lat, lng) {
+        try {
+            const url = `https://api.maptiler.com/elevation/${lng},${lat}.json?key=${MAPTILER_KEY}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            if (data.results && data.results.length > 0) {
+                playerElevation = data.results[0].elevation;
+            }
+        } catch (e) {
+            console.warn('Player elevation fetch failed:', e);
+        }
+    }
+
+    async function fetchElevation(lat, lng) {
+        try {
+            const url = `https://api.maptiler.com/elevation/${lng},${lat}.json?key=${MAPTILER_KEY}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            if (data.results && data.results.length > 0) {
+                return data.results[0].elevation;
+            }
+        } catch (e) {
+            console.warn('Elevation fetch failed:', e);
+        }
+        return null;
+    }
+
+    // ============================================================
+    // "Plays Like" Calculation
+    // ============================================================
+    function calcPlaysLike(distYards, playerElev, targetElev, targetLng, targetLat) {
+        let adjustedYards = distYards;
+        let elevAdjust = 0;
+        let windAdjust = 0;
+
+        // --- Elevation adjustment ---
+        if (playerElev !== null && targetElev !== null) {
+            const elevDiffMeters = targetElev - playerElev;
+            const elevDiffFeet = elevDiffMeters * 3.28084;
+
+            // ~1 yard per 3 feet of elevation change
+            elevAdjust = elevDiffFeet / 3;
+
+            const absFeet = Math.abs(Math.round(elevDiffFeet));
+            const isUphill = elevDiffFeet > 1;
+            const isDownhill = elevDiffFeet < -1;
+
+            document.getElementById('elevDiff').textContent = absFeet;
+            const indicator = document.getElementById('elevIndicator');
+            const icon = document.getElementById('elevIcon');
+
+            if (isUphill) {
+                indicator.className = 'elev-indicator uphill';
+                icon.innerHTML = '<path d="M6 9V3M3 5l3-3 3 3"/>';
+                document.getElementById('elevDetail').textContent = `↑ ${absFeet}ft uphill`;
+            } else if (isDownhill) {
+                indicator.className = 'elev-indicator downhill';
+                icon.innerHTML = '<path d="M6 3V9M3 7l3 3 3-3"/>';
+                document.getElementById('elevDetail').textContent = `↓ ${absFeet}ft downhill`;
+            } else {
+                indicator.className = 'elev-indicator';
+                icon.innerHTML = '<path d="M2 6h8"/>';
+                document.getElementById('elevDetail').textContent = 'Level';
+            }
+        }
+
+        // --- Wind adjustment ---
+        if (windSpeed !== null && windDeg !== null && playerLocation) {
+            const bearingToTarget = turf.bearing(
+                turf.point([playerLocation.lng, playerLocation.lat]),
+                turf.point([targetLng, targetLat])
+            );
+
+            const windTravelDeg = (windDeg + 180) % 360;
+
+            let angleDiff = windTravelDeg - bearingToTarget;
+            while (angleDiff > 180) angleDiff -= 360;
+            while (angleDiff < -180) angleDiff += 360;
+
+            const cosAngle = Math.cos(angleDiff * Math.PI / 180);
+
+            if (cosAngle < 0) {
+                // Headwind
+                windAdjust = distYards * Math.abs(cosAngle) * windSpeed * 0.01;
+            } else {
+                // Tailwind
+                windAdjust = -distYards * cosAngle * windSpeed * 0.005;
+            }
+        }
+
+        adjustedYards = distYards + elevAdjust + windAdjust;
+
+        const playsLike = Math.round(adjustedYards);
+        const diff = playsLike - Math.round(distYards);
+        const playsLikeCard = document.getElementById('playsLikeCard');
+
+        document.getElementById('playsLikeYds').innerHTML = `${playsLike}<span class="unit">yd</span>`;
+
+        if (diff > 0) {
+            playsLikeCard.className = 'sidebar-card plays-like';
+            document.getElementById('playsLikeDetail').textContent = `+${diff} (plays longer)`;
+        } else if (diff < 0) {
+            playsLikeCard.className = 'sidebar-card plays-like shorter';
+            document.getElementById('playsLikeDetail').textContent = `${diff} (plays shorter)`;
+        } else {
+            playsLikeCard.className = 'sidebar-card plays-like';
+            document.getElementById('playsLikeDetail').textContent = 'No adjustment';
+        }
+
+        return playsLike;
+    }
+
+    // ============================================================
+    // Target markers
+    // ============================================================
+    function addLine(id, color) {
+        map.addSource(`line-${id}`, {
+            type: 'geojson',
+            data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } }
+        });
+        map.addLayer({
+            id: `line-${id}`,
+            type: 'line',
+            source: `line-${id}`,
+            paint: {
+                'line-color': color,
+                'line-width': 2,
+                'line-dasharray': [4, 4],
+                'line-opacity': 0.7
+            }
+        });
+    }
+
+    function updateLine(id, from, to) {
+        const src = map.getSource(`line-${id}`);
+        if (src) {
+            src.setData({
+                type: 'Feature',
+                geometry: {
+                    type: 'LineString',
+                    coordinates: [from, to]
+                }
+            });
+        }
+    }
+
+    function removeLine(id) {
+        if (map.getLayer(`line-${id}`)) map.removeLayer(`line-${id}`);
+        if (map.getSource(`line-${id}`)) map.removeSource(`line-${id}`);
+    }
+
+    function calcDistance(from, to) {
+        return turf.distance(
+            turf.point([from.lng, from.lat]),
+            turf.point(to),
+            { units: 'yards' }
+        );
+    }
+
+    function updateTargetDistance(t) {
+        if (!playerLocation) return;
+        const lngLat = t.marker.getLngLat();
+        const dist = calcDistance(playerLocation, [lngLat.lng, lngLat.lat]);
+        const yards = Math.round(dist);
+        t.popup.setHTML(`<div class="yard-popup">${yards} yd</div>`);
+        updateLine(t.lineIdx, [playerLocation.lng, playerLocation.lat], [lngLat.lng, lngLat.lat]);
+
+        if (targets.length > 0 && t === targets[targets.length - 1]) {
+            updateSidebar(yards, lngLat.lng, lngLat.lat);
+        }
+    }
+
+    async function updateSidebar(yards, targetLng, targetLat) {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.add('visible');
+
+        const targetElev = await fetchElevation(targetLat, targetLng);
+        calcPlaysLike(yards, playerElevation, targetElev, targetLng, targetLat);
+    }
+
+    async function addTarget(lngLat) {
+        if (!playerLocation) return;
+
+        if (targets.length >= MAX_TARGETS) {
+            const oldest = targets.shift();
+            oldest.marker.remove();
+            oldest.popup.remove();
+            removeLine(oldest.lineIdx);
+        }
+
+        const idx = targets.length;
+        const lineIdx = Date.now();
+
+        const dotEl = document.createElement('div');
+        dotEl.className = `marker-dot ${DOT_CLASSES[idx % 5]}`;
+
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'width:40px;height:40px;display:flex;align-items:center;justify-content:center;';
+        wrapper.appendChild(dotEl);
+
+        const marker = new maplibregl.Marker({ element: wrapper, draggable: true })
+            .setLngLat(lngLat)
+            .addTo(map);
+
+        const dist = calcDistance(playerLocation, [lngLat.lng, lngLat.lat]);
+        const yards = Math.round(dist);
+        const popup = new maplibregl.Popup({
+            closeButton: false,
+            closeOnClick: false,
+            offset: 18,
+            className: ''
+        })
+            .setLngLat(lngLat)
+            .setHTML(`<div class="yard-popup">${yards} yd</div>`)
+            .addTo(map);
+
+        addLine(lineIdx, LINE_COLORS[idx % 5]);
+        updateLine(lineIdx, [playerLocation.lng, playerLocation.lat], [lngLat.lng, lngLat.lat]);
+
+        const target = { marker, popup, lineIdx };
+        targets.push(target);
+
+        marker.on('dragstart', () => {
+            dotEl.classList.add('dragging');
+        });
+        marker.on('drag', () => {
+            const pos = marker.getLngLat();
+            popup.setLngLat(pos);
+            const d = calcDistance(playerLocation, [pos.lng, pos.lat]);
+            const y = Math.round(d);
+            popup.setHTML(`<div class="yard-popup">${y} yd</div>`);
+            updateLine(lineIdx, [playerLocation.lng, playerLocation.lat], [pos.lng, pos.lat]);
+        });
+        marker.on('dragend', () => {
+            dotEl.classList.remove('dragging');
+            const pos = marker.getLngLat();
+            const d = calcDistance(playerLocation, [pos.lng, pos.lat]);
+            const y = Math.round(d);
+            popup.setHTML(`<div class="yard-popup">${y} yd</div>`);
+            updateSidebar(y, pos.lng, pos.lat);
+        });
+
+        updateClearButton();
+        updateSidebar(yards, lngLat.lng, lngLat.lat);
+
+        if (navigator.vibrate) navigator.vibrate(15);
+    }
+
+    // ============================================================
+    // Map tap handler
+    // ============================================================
+    map.on('click', (e) => {
+        const { x, y } = e.point;
+        const ripple = document.createElement('div');
+        ripple.className = 'tap-ripple';
+        ripple.style.left = x + 'px';
+        ripple.style.top = y + 'px';
+        document.body.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 600);
+
+        addTarget(e.lngLat);
+    });
+
+    // ============================================================
+    // Clear all
+    // ============================================================
+    function clearAllTargets() {
+        while (targets.length > 0) {
+            const t = targets.pop();
+            t.marker.remove();
+            t.popup.remove();
+            removeLine(t.lineIdx);
+        }
+        updateClearButton();
+        document.getElementById('sidebar').classList.remove('visible');
+    }
+
+    function updateClearButton() {
+        const clearBtn = document.getElementById('clearBtn');
+        const countEl = document.getElementById('markerCount');
+        if (targets.length > 0) {
+            clearBtn.classList.add('visible');
+            if (targets.length > 1) {
+                countEl.textContent = `${targets.length} markers`;
+                countEl.classList.add('visible');
+            } else {
+                countEl.classList.remove('visible');
+            }
+        } else {
+            clearBtn.classList.remove('visible');
+            countEl.classList.remove('visible');
+        }
+    }
+
+    document.getElementById('clearBtn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        clearAllTargets();
+    });
+
+    // ============================================================
+    // Re-center
+    // ============================================================
+    document.getElementById('recenterBtn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (playerLocation) {
+            isFollowing = true;
+            map.flyTo({ center: [playerLocation.lng, playerLocation.lat], zoom: 17.5, duration: 1000 });
+        } else {
+            document.getElementById('gpsStatus').classList.remove('hidden');
+        }
+    });
+
+    map.on('dragstart', () => { isFollowing = false; });
+
+    // ============================================================
+    // Init
+    // ============================================================
+    map.on('load', () => { startGPS(); });
+}
