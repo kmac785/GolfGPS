@@ -281,7 +281,8 @@ function initApp(MAPTILER_KEY) {
 
                 document.getElementById('windSpeed').innerHTML = `${windSpeed}<span class="unit">mph</span>`;
                 document.getElementById('windDir').textContent = degToCardinal(windDeg) + (windGust ? ` · Gust ${windGust}` : '');
-                document.getElementById('windArrow').style.transform = `rotate(${windDeg}deg)`;
+                // windDeg is the direction wind comes FROM; rotate arrow to show where wind is going TO
+                document.getElementById('windArrow').style.transform = `rotate(${(windDeg + 180) % 360}deg)`;
             }
         } catch (e) {
             console.warn('Weather fetch failed:', e);
