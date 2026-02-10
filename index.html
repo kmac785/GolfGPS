@@ -92,37 +92,38 @@
 
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
-        <div class="sidebar-card" id="windCard">
-            <div class="card-label">Wind</div>
-            <div class="wind-arrow-wrap">
+        <!-- Plays Like — primary card -->
+        <div class="sidebar-card plays-like" id="playsLikeCard">
+            <div class="card-label">Plays Like</div>
+            <div class="plays-like-main">
+                <span class="plays-like-yds" id="playsLikeYds">--</span>
+                <span class="plays-like-unit">yd</span>
+                <span class="club-suggestion" id="clubSuggestion"></span>
+            </div>
+            <div class="card-sub" id="playsLikeDetail">--</div>
+        </div>
+
+        <!-- Conditions — wind + elevation combined -->
+        <div class="sidebar-card conditions" id="conditionsCard">
+            <div class="conditions-row">
                 <svg class="wind-arrow" id="windArrow" viewBox="0 0 28 28" fill="none">
                     <path d="M14 4 L20 20 L14 16 L8 20 Z" fill="rgba(255,255,255,0.85)" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
                 </svg>
-                <div class="wind-info">
-                    <div class="card-value" id="windSpeed">--<span class="unit">mph</span></div>
-                    <div class="card-sub" id="windDir">--</div>
-                </div>
+                <div class="conditions-value" id="windSpeed">--</div>
+                <div class="conditions-unit">mph</div>
+                <div class="conditions-detail" id="windDir">--</div>
             </div>
-        </div>
-
-        <div class="sidebar-card" id="elevCard">
-            <div class="card-label">Elevation</div>
-            <div class="card-value">
+            <div class="conditions-divider"></div>
+            <div class="conditions-row">
                 <span class="elev-indicator" id="elevIndicator">
                     <svg id="elevIcon" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                         <path d="M6 9V3M3 5l3-3 3 3"/>
                     </svg>
-                    <span id="elevDiff">--</span><span class="unit">ft</span>
                 </span>
+                <div class="conditions-value" id="elevDiff">--</div>
+                <div class="conditions-unit">ft</div>
+                <div class="conditions-detail" id="elevDetail">--</div>
             </div>
-            <div class="card-sub" id="elevDetail">--</div>
-        </div>
-
-        <div class="sidebar-card plays-like" id="playsLikeCard">
-            <div class="card-label">Plays Like</div>
-            <div class="card-value" id="playsLikeYds">--<span class="unit">yd</span></div>
-            <div class="card-sub" id="playsLikeDetail">--</div>
-            <div class="club-suggestion" id="clubSuggestion"></div>
         </div>
     </div>
 

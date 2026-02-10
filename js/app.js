@@ -279,8 +279,8 @@ function initApp(MAPTILER_KEY) {
                 windDeg = data.current.wind_direction_10m;
                 windGust = data.current.wind_gusts_10m ? Math.round(data.current.wind_gusts_10m) : null;
 
-                document.getElementById('windSpeed').innerHTML = `${windSpeed}<span class="unit">mph</span>`;
-                document.getElementById('windDir').textContent = degToCardinal(windDeg) + (windGust ? ` · Gust ${windGust}` : '');
+                document.getElementById('windSpeed').textContent = windSpeed;
+                document.getElementById('windDir').textContent = degToCardinal(windDeg) + (windGust ? ` · G${windGust}` : '');
                 // windDeg is the direction wind comes FROM; rotate arrow to show where wind is going TO
                 document.getElementById('windArrow').style.transform = `rotate(${(windDeg + 180) % 360}deg)`;
             }
@@ -407,18 +407,19 @@ function initApp(MAPTILER_KEY) {
 
         const playsLike = Math.round(adjustedYards);
         const diff = playsLike - Math.round(distYards);
-        const playsLikeCard = document.getElementById('playsLikeCard');
+        const ydsEl = document.getElementById('playsLikeYds');
 
-        document.getElementById('playsLikeYds').innerHTML = `${playsLike}<span class="unit">yd</span>`;
+        ydsEl.textContent = playsLike;
 
+        // Color: red if plays longer, green if plays shorter
+        ydsEl.classList.remove('longer', 'shorter');
         if (diff > 0) {
-            playsLikeCard.className = 'sidebar-card plays-like';
-            document.getElementById('playsLikeDetail').textContent = `+${diff} (plays longer)`;
+            ydsEl.classList.add('longer');
+            document.getElementById('playsLikeDetail').textContent = `+${diff} longer`;
         } else if (diff < 0) {
-            playsLikeCard.className = 'sidebar-card plays-like shorter';
-            document.getElementById('playsLikeDetail').textContent = `${diff} (plays shorter)`;
+            ydsEl.classList.add('shorter');
+            document.getElementById('playsLikeDetail').textContent = `${diff} shorter`;
         } else {
-            playsLikeCard.className = 'sidebar-card plays-like';
             document.getElementById('playsLikeDetail').textContent = 'No adjustment';
         }
 
