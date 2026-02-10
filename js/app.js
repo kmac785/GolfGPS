@@ -1,7 +1,23 @@
 // ============================================================
-// API Key Management
+// Settings & Storage
 // ============================================================
 const STORAGE_KEY = 'golfgps_maptiler_key';
+const CLUBS_KEY = 'golfgps_clubs';
+
+const DEFAULT_CLUBS = [
+    { club: '56°', carry: 80 },
+    { club: '50°', carry: 100 },
+    { club: 'PW',  carry: 115 },
+    { club: '9i',  carry: 130 },
+    { club: '8i',  carry: 150 },
+    { club: '7i',  carry: 160 },
+    { club: '6i',  carry: 170 },
+    { club: '5i',  carry: 180 },
+    { club: '4i',  carry: 190 },
+    { club: '3H',  carry: 210 },
+    { club: '3W',  carry: 230 },
+    { club: 'D',   carry: 270 }
+];
 
 function getApiKey() {
     return localStorage.getItem(STORAGE_KEY);
@@ -11,8 +27,42 @@ function saveApiKey(key) {
     localStorage.setItem(STORAGE_KEY, key.trim());
 }
 
-function showSetup() {
-    document.getElementById('setupOverlay').classList.remove('hidden');
+function getClubs() {
+    try {
+        const stored = localStorage.getItem(CLUBS_KEY);
+        if (stored) return JSON.parse(stored);
+    } catch (e) { /* use defaults */ }
+    return DEFAULT_CLUBS;
+}
+
+function saveClubs(clubs) {
+    localStorage.setItem(CLUBS_KEY, JSON.stringify(clubs));
+}
+
+// Build club editor rows in the settings panel
+function renderClubEditor() {
+    const editor = document.getElementById('clubEditor');
+    const clubs = getClubs();
+    editor.innerHTML = '';
+    clubs.forEach((c, i) => {
+        const row = document.createElement('div');
+        row.className = 'club-row';
+        row.innerHTML = `<span class="club-name">${c.club}</span><input type="number" data-idx="${i}" value="${c.carry}" inputmode="numeric" min="0" max="400">`;
+        editor.appendChild(row);
+    });
+}
+
+function readClubEditorValues() {
+    const clubs = getClubs();
+    const inputs = document.querySelectorAll('#clubEditor input[type="number"]');
+    inputs.forEach((inp) => {
+        const idx = parseInt(inp.dataset.idx, 10);
+        const val = parseInt(inp.value, 10);
+        if (!isNaN(val) && clubs[idx]) {
+            clubs[idx].carry = val;
+        }
+    });
+    return clubs;
 }
 
 function hideSetup() {
@@ -21,31 +71,40 @@ function hideSetup() {
     setTimeout(() => { overlay.style.display = 'none'; }, 400);
 }
 
-// Setup overlay handlers
+function showSetup() {
+    const overlay = document.getElementById('setupOverlay');
+    overlay.style.display = '';
+    overlay.classList.remove('hidden');
+    document.getElementById('apiKeyInput').value = getApiKey() || '';
+    renderClubEditor();
+}
+
+// Setup overlay — Save button
 document.getElementById('saveKeyBtn').addEventListener('click', () => {
     const key = document.getElementById('apiKeyInput').value.trim();
     if (!key) return;
     saveApiKey(key);
+    saveClubs(readClubEditorValues());
     hideSetup();
-    initApp(key);
+    if (!window._appInitialized) {
+        initApp(key);
+    }
 });
 
 document.getElementById('apiKeyInput').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') document.getElementById('saveKeyBtn').click();
 });
 
-// Settings button — re-show setup overlay to change key
+// Settings gear button
 document.getElementById('settingsBtn').addEventListener('click', (e) => {
     e.stopPropagation();
-    const overlay = document.getElementById('setupOverlay');
-    overlay.style.display = '';
-    overlay.classList.remove('hidden');
-    document.getElementById('apiKeyInput').value = getApiKey() || '';
+    showSetup();
 });
 
 // ============================================================
 // Boot
 // ============================================================
+renderClubEditor();
 const existingKey = getApiKey();
 if (existingKey) {
     hideSetup();
@@ -61,6 +120,7 @@ if ('serviceWorker' in navigator) {
 // Main app
 // ============================================================
 function initApp(MAPTILER_KEY) {
+    window._appInitialized = true;
 
     // State
     let playerLocation = null;
@@ -267,30 +327,16 @@ function initApp(MAPTILER_KEY) {
     }
 
     // ============================================================
-    // Club selection (sorted by carry ascending)
+    // Club selection (reads from localStorage)
     // ============================================================
-    const CLUBS = [
-        { club: '56°', carry: 80 },
-        { club: '50°', carry: 100 },
-        { club: 'PW', carry: 115 },
-        { club: '9i', carry: 130 },
-        { club: '8i', carry: 150 },
-        { club: '7i', carry: 160 },
-        { club: '6i', carry: 170 },
-        { club: '5i', carry: 180 },
-        { club: '4i', carry: 190 },
-        { club: '3H', carry: 210 },
-        { club: '3W', carry: 230 },
-        { club: 'D',  carry: 270 }
-    ];
-
     function suggestClub(playsLikeYards) {
+        const clubs = getClubs();
         // Find the shortest club whose carry covers the distance
-        for (const c of CLUBS) {
+        for (const c of clubs) {
             if (c.carry >= playsLikeYards) return c;
         }
-        // Beyond driver
-        return CLUBS[CLUBS.length - 1];
+        // Beyond longest club
+        return clubs[clubs.length - 1];
     }
 
     // ============================================================

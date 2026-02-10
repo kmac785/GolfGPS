@@ -23,7 +23,7 @@
 </head>
 <body>
 
-    <!-- API Key setup overlay -->
+    <!-- Settings overlay -->
     <div class="setup-overlay" id="setupOverlay">
         <div class="setup-card">
             <div class="setup-icon">
@@ -35,9 +35,21 @@
                 </svg>
             </div>
             <h1>Golf GPS</h1>
-            <p>Enter your <a href="https://cloud.maptiler.com/account/keys/" target="_blank" rel="noopener">MapTiler API key</a> to load satellite imagery.</p>
-            <input type="text" id="apiKeyInput" placeholder="Your MapTiler API key" autocomplete="off" spellcheck="false">
-            <button id="saveKeyBtn">Get Started</button>
+
+            <!-- API Key section -->
+            <div class="settings-section">
+                <div class="settings-label">MapTiler API Key</div>
+                <p class="settings-hint">Get a key from <a href="https://cloud.maptiler.com/account/keys/" target="_blank" rel="noopener">MapTiler Cloud</a></p>
+                <input type="text" id="apiKeyInput" placeholder="Your MapTiler API key" autocomplete="off" spellcheck="false">
+            </div>
+
+            <!-- Club distances section -->
+            <div class="settings-section">
+                <div class="settings-label">Club Distances <span class="settings-hint-inline">(carry yds)</span></div>
+                <div class="club-editor" id="clubEditor"></div>
+            </div>
+
+            <button id="saveKeyBtn">Save</button>
         </div>
     </div>
 
