@@ -176,6 +176,16 @@ function initApp(MAPTILER_KEY) {
     // ============================================================
     // Compass / North button
     // ============================================================
+    // Compass / North button + wind arrow sync
+    // ============================================================
+    function updateWindArrow() {
+        if (windDeg === null) return;
+        // Wind comes FROM windDeg; arrow shows where wind goes TO, adjusted for map rotation
+        const windTravelDeg = (windDeg + 180) % 360;
+        const bearing = map.getBearing();
+        document.getElementById('windArrow').style.transform = `rotate(${windTravelDeg - bearing}deg)`;
+    }
+
     const northBtn = document.getElementById('northBtn');
     map.on('rotate', () => {
         const bearing = map.getBearing();
@@ -185,6 +195,7 @@ function initApp(MAPTILER_KEY) {
         } else {
             northBtn.classList.remove('visible');
         }
+        updateWindArrow();
     });
     northBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -281,8 +292,7 @@ function initApp(MAPTILER_KEY) {
 
                 document.getElementById('windSpeed').textContent = windSpeed;
                 document.getElementById('windDir').textContent = degToCardinal(windDeg) + (windGust ? ` · G${windGust}` : '');
-                // windDeg is the direction wind comes FROM; rotate arrow to show where wind is going TO
-                document.getElementById('windArrow').style.transform = `rotate(${(windDeg + 180) % 360}deg)`;
+                updateWindArrow();
             }
         } catch (e) {
             console.warn('Weather fetch failed:', e);
