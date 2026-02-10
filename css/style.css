@@ -367,10 +367,10 @@ body {
     -webkit-backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.15);
     color: #fff;
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 14px;
-    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 14px;
+    font-size: 20px;
+    font-weight: 700;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     white-space: nowrap;
     pointer-events: none;
@@ -477,9 +477,9 @@ body {
     font-weight: 500;
     color: rgba(255, 255, 255, 0.45);
 }
-/* Color states — set via JS on .plays-like-yds */
-.plays-like-yds.longer { color: #FF6961; }
-.plays-like-yds.shorter { color: #30D158; }
+/* Color states — green = more club needed, red = less club needed */
+.plays-like-yds.longer { color: #30D158; }
+.plays-like-yds.shorter { color: #FF6961; }
 
 /* Club suggestion — inline after yardage */
 .club-suggestion {
