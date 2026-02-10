@@ -433,6 +433,16 @@ body {
     color: #30D158;
 }
 
+/* Club suggestion */
+.club-suggestion {
+    font-size: 15px;
+    font-weight: 700;
+    color: #FFD60A;
+    margin-top: 4px;
+    letter-spacing: 0.3px;
+}
+.club-suggestion:empty { display: none; }
+
 /* Elevation change indicator */
 .elev-indicator {
     display: inline-flex;

@@ -267,6 +267,33 @@ function initApp(MAPTILER_KEY) {
     }
 
     // ============================================================
+    // Club selection (sorted by carry ascending)
+    // ============================================================
+    const CLUBS = [
+        { club: '56°', carry: 80 },
+        { club: '50°', carry: 100 },
+        { club: 'PW', carry: 115 },
+        { club: '9i', carry: 130 },
+        { club: '8i', carry: 150 },
+        { club: '7i', carry: 160 },
+        { club: '6i', carry: 170 },
+        { club: '5i', carry: 180 },
+        { club: '4i', carry: 190 },
+        { club: '3H', carry: 210 },
+        { club: '3W', carry: 230 },
+        { club: 'D',  carry: 270 }
+    ];
+
+    function suggestClub(playsLikeYards) {
+        // Find the shortest club whose carry covers the distance
+        for (const c of CLUBS) {
+            if (c.carry >= playsLikeYards) return c;
+        }
+        // Beyond driver
+        return CLUBS[CLUBS.length - 1];
+    }
+
+    // ============================================================
     // "Plays Like" Calculation
     // ============================================================
     function calcPlaysLike(distYards, playerElev, targetElev, targetLng, targetLat) {
@@ -347,6 +374,10 @@ function initApp(MAPTILER_KEY) {
             playsLikeCard.className = 'sidebar-card plays-like';
             document.getElementById('playsLikeDetail').textContent = 'No adjustment';
         }
+
+        // Club suggestion
+        const suggestion = suggestClub(playsLike);
+        document.getElementById('clubSuggestion').textContent = suggestion.club;
 
         return playsLike;
     }
