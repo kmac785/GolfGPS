@@ -124,7 +124,6 @@ function initApp(MAPTILER_KEY) {
 
     // State
     let playerLocation = null;
-    let playerElevation = null;
     let playerMarker = null;
     let isFollowing = true;
 
@@ -179,8 +178,6 @@ function initApp(MAPTILER_KEY) {
         attributionControl: true
     });
 
-    // ============================================================
-    // Compass / North button
     // ============================================================
     // Compass / North button + wind arrow sync
     // ============================================================
@@ -253,13 +250,11 @@ function initApp(MAPTILER_KEY) {
 
                     // Fetch weather on first GPS lock
                     fetchWeather(latitude, longitude);
-                    fetchPlayerElevation(latitude, longitude);
 
                     // Refresh weather every 5 minutes
                     weatherFetchInterval = setInterval(() => {
                         if (playerLocation) {
                             fetchWeather(playerLocation.lat, playerLocation.lng);
-                            fetchPlayerElevation(playerLocation.lat, playerLocation.lng);
                         }
                     }, 300000);
                 } else {
@@ -322,22 +317,8 @@ function initApp(MAPTILER_KEY) {
     }
 
     // ============================================================
-    // Elevation (MapTiler)
+    // Elevation (MapTiler) — fetched on demand, not on a timer
     // ============================================================
-    async function fetchPlayerElevation(lat, lng) {
-        try {
-            const url = `https://api.maptiler.com/elevation/${lng},${lat}.json?key=${MAPTILER_KEY}`;
-            const resp = await fetch(url);
-            const data = await resp.json();
-            // Response is [[lng, lat, elevation]]
-            if (Array.isArray(data) && data.length > 0 && data[0].length >= 3) {
-                playerElevation = data[0][2]; // meters
-            }
-        } catch (e) {
-            console.warn('Player elevation fetch failed:', e);
-        }
-    }
-
     async function fetchElevation(lat, lng) {
         try {
             const url = `https://api.maptiler.com/elevation/${lng},${lat}.json?key=${MAPTILER_KEY}`;
@@ -539,7 +520,7 @@ function initApp(MAPTILER_KEY) {
         t.cardLine.setAttribute('y2', cy);
     }
 
-    async function updateCombinedCard(yards, targetLng, targetLat) {
+    async function updateCombinedCard(yards, targetLng, targetLat, playerElev) {
         if (!activeTarget || !activeTarget.cardEl) return;
         const cardEl = activeTarget.cardEl; // capture before any await
 
@@ -547,8 +528,8 @@ function initApp(MAPTILER_KEY) {
         const yardsEl = cardEl.querySelector('.card-yards');
         if (yardsEl) yardsEl.textContent = yards + 'y';
 
-        // Show plays-like immediately using wind only (no elevation wait)
-        const quickResult = calcPlaysLike(yards, null, null, targetLng, targetLat);
+        // Show plays-like immediately using wind only (with player elev if available)
+        const quickResult = calcPlaysLike(yards, playerElev || null, null, targetLng, targetLat);
         const plMain = cardEl.querySelector('.card-pl-main');
         if (plMain) {
             const qColor = quickResult.diff > 0 ? ' longer' : quickResult.diff < 0 ? ' shorter' : '';
@@ -556,11 +537,11 @@ function initApp(MAPTILER_KEY) {
             plMain.innerHTML = `${quickResult.playsLike}y<span class="card-pl-club">${quickResult.club}</span>`;
         }
 
-        // Fetch elevation then refine
+        // Fetch target elevation then refine
         const targetElev = await fetchElevation(targetLat, targetLng);
         if (!cardEl.isConnected) return; // card was removed while fetching
 
-        const result = calcPlaysLike(yards, playerElevation, targetElev, targetLng, targetLat);
+        const result = calcPlaysLike(yards, playerElev || null, targetElev, targetLng, targetLat);
 
         if (plMain && plMain.isConnected) {
             const colorClass = result.diff > 0 ? ' longer' : result.diff < 0 ? ' shorter' : '';
@@ -608,7 +589,7 @@ function initApp(MAPTILER_KEY) {
             if (playerLocation) {
                 const lngLat = t.marker.getLngLat();
                 const dist = calcDistance(playerLocation, [lngLat.lng, lngLat.lat]);
-                updateCombinedCard(Math.round(dist), lngLat.lng, lngLat.lat);
+                updateCombinedCard(Math.round(dist), lngLat.lng, lngLat.lat, t.playerElev || null);
             }
         }
     }
@@ -622,7 +603,7 @@ function initApp(MAPTILER_KEY) {
         updateLine(t.lineIdx, [playerLocation.lng, playerLocation.lat], [lngLat.lng, lngLat.lat]);
 
         if (t === activeTarget) {
-            updateCombinedCard(yards, lngLat.lng, lngLat.lat);
+            updateCombinedCard(yards, lngLat.lng, lngLat.lat, t.playerElev || null);
         }
     }
 
@@ -671,8 +652,19 @@ function initApp(MAPTILER_KEY) {
         addLine(lineIdx, LINE_COLORS[idx % 5]);
         updateLine(lineIdx, [playerLocation.lng, playerLocation.lat], [lngLat.lng, lngLat.lat]);
 
-        const target = { marker, popup, lineIdx, dotEl, crosshairEl, cardOverlay: null, cardEl: null, cardLine: null };
+        const target = { marker, popup, lineIdx, dotEl, crosshairEl, cardOverlay: null, cardEl: null, cardLine: null, playerElev: null };
         targets.push(target);
+
+        // Fetch player elevation fresh for this tap
+        fetchElevation(playerLocation.lat, playerLocation.lng).then(elev => {
+            target.playerElev = elev;
+            // Re-update the card if this target is still active
+            if (activeTarget === target && target.cardEl) {
+                const pos = target.marker.getLngLat();
+                const d = calcDistance(playerLocation, [pos.lng, pos.lat]);
+                updateCombinedCard(Math.round(d), pos.lng, pos.lat, elev);
+            }
+        });
 
         // Tap marker to select it
         wrapper.addEventListener('click', (e) => {
@@ -701,7 +693,7 @@ function initApp(MAPTILER_KEY) {
             const d = calcDistance(playerLocation, [pos.lng, pos.lat]);
             const y = Math.round(d);
             popup.setHTML(`<div class="yard-popup">${y}y</div>`);
-            updateCombinedCard(y, pos.lng, pos.lat);
+            updateCombinedCard(y, pos.lng, pos.lat, target.playerElev);
         });
 
         updateClearButton();
