@@ -180,10 +180,9 @@ function initApp(MAPTILER_KEY) {
     // ============================================================
     function updateWindArrow() {
         if (windDeg === null) return;
-        // Wind comes FROM windDeg; arrow shows where wind goes TO, adjusted for map rotation
         const windTravelDeg = (windDeg + 180) % 360;
         const bearing = map.getBearing();
-        document.getElementById('windArrow').style.transform = `rotate(${windTravelDeg - bearing}deg)`;
+        document.getElementById('windBoxArrow').style.transform = `rotate(${windTravelDeg - bearing}deg)`;
     }
 
     const northBtn = document.getElementById('northBtn');
@@ -290,8 +289,8 @@ function initApp(MAPTILER_KEY) {
                 windDeg = data.current.wind_direction_10m;
                 windGust = data.current.wind_gusts_10m ? Math.round(data.current.wind_gusts_10m) : null;
 
-                document.getElementById('windSpeed').textContent = windSpeed;
-                document.getElementById('windDir').textContent = degToCardinal(windDeg) + (windGust ? ` · G${windGust}` : '');
+                document.getElementById('windBoxSpeed').textContent = windSpeed;
+                document.getElementById('windBox').classList.add('visible');
                 updateWindArrow();
             }
         } catch (e) {
@@ -351,7 +350,28 @@ function initApp(MAPTILER_KEY) {
     }
 
     // ============================================================
-    // "Plays Like" Calculation
+    // Crosshair SVG factory
+    // ============================================================
+    function createCrosshairSVG(color) {
+        const size = 36;
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+        svg.setAttribute('width', String(size));
+        svg.setAttribute('height', String(size));
+        svg.style.display = 'block';
+        svg.innerHTML = `
+            <circle cx="18" cy="18" r="13" fill="none" stroke="${color}" stroke-width="1.5" opacity="0.85"/>
+            <line x1="18" y1="1" x2="18" y2="9" stroke="${color}" stroke-width="1.5" opacity="0.85"/>
+            <line x1="18" y1="27" x2="18" y2="35" stroke="${color}" stroke-width="1.5" opacity="0.85"/>
+            <line x1="1" y1="18" x2="9" y2="18" stroke="${color}" stroke-width="1.5" opacity="0.85"/>
+            <line x1="27" y1="18" x2="35" y2="18" stroke="${color}" stroke-width="1.5" opacity="0.85"/>
+            <circle cx="18" cy="18" r="2" fill="${color}" opacity="0.9"/>
+        `;
+        return svg;
+    }
+
+    // ============================================================
+    // "Plays Like" Calculation (returns data, no DOM writes)
     // ============================================================
     function calcPlaysLike(distYards, playerElev, targetElev, targetLng, targetLat) {
         let adjustedYards = distYards;
@@ -362,31 +382,7 @@ function initApp(MAPTILER_KEY) {
         if (playerElev !== null && targetElev !== null) {
             const elevDiffMeters = targetElev - playerElev;
             const elevDiffFeet = elevDiffMeters * 3.28084;
-
-            // ~1 yard per 3 feet of elevation change
             elevAdjust = elevDiffFeet / 3;
-
-            const absFeet = Math.abs(Math.round(elevDiffFeet));
-            const isUphill = elevDiffFeet > 1;
-            const isDownhill = elevDiffFeet < -1;
-
-            document.getElementById('elevDiff').textContent = absFeet;
-            const indicator = document.getElementById('elevIndicator');
-            const icon = document.getElementById('elevIcon');
-
-            if (isUphill) {
-                indicator.className = 'elev-indicator uphill';
-                icon.innerHTML = '<path d="M6 9V3M3 5l3-3 3 3"/>';
-                document.getElementById('elevDetail').textContent = `↑ ${absFeet}ft uphill`;
-            } else if (isDownhill) {
-                indicator.className = 'elev-indicator downhill';
-                icon.innerHTML = '<path d="M6 3V9M3 7l3 3 3-3"/>';
-                document.getElementById('elevDetail').textContent = `↓ ${absFeet}ft downhill`;
-            } else {
-                indicator.className = 'elev-indicator';
-                icon.innerHTML = '<path d="M2 6h8"/>';
-                document.getElementById('elevDetail').textContent = 'Level';
-            }
         }
 
         // --- Wind adjustment ---
@@ -405,10 +401,8 @@ function initApp(MAPTILER_KEY) {
             const cosAngle = Math.cos(angleDiff * Math.PI / 180);
 
             if (cosAngle < 0) {
-                // Headwind
                 windAdjust = distYards * Math.abs(cosAngle) * windSpeed * 0.01;
             } else {
-                // Tailwind
                 windAdjust = -distYards * cosAngle * windSpeed * 0.005;
             }
         }
@@ -417,27 +411,9 @@ function initApp(MAPTILER_KEY) {
 
         const playsLike = Math.round(adjustedYards);
         const diff = playsLike - Math.round(distYards);
-        const ydsEl = document.getElementById('playsLikeYds');
-
-        ydsEl.textContent = playsLike;
-
-        // Color: red if plays longer, green if plays shorter
-        ydsEl.classList.remove('longer', 'shorter');
-        if (diff > 0) {
-            ydsEl.classList.add('longer');
-            document.getElementById('playsLikeDetail').textContent = `+${diff} longer`;
-        } else if (diff < 0) {
-            ydsEl.classList.add('shorter');
-            document.getElementById('playsLikeDetail').textContent = `${diff} shorter`;
-        } else {
-            document.getElementById('playsLikeDetail').textContent = 'No adjustment';
-        }
-
-        // Club suggestion
         const suggestion = suggestClub(playsLike);
-        document.getElementById('clubSuggestion').textContent = suggestion.club;
 
-        return playsLike;
+        return { playsLike, diff, club: suggestion.club };
     }
 
     // ============================================================
@@ -488,20 +464,39 @@ function initApp(MAPTILER_KEY) {
     }
 
     function selectTarget(t) {
-        // Remove active glow from previous
-        if (activeTarget && activeTarget.dotEl) {
+        // Deselect previous: show dot, hide crosshair, remove plays-like popup
+        if (activeTarget) {
             activeTarget.dotEl.classList.remove('active');
+            activeTarget.dotEl.style.display = '';
+            if (activeTarget.crosshairEl) activeTarget.crosshairEl.style.display = 'none';
+            if (activeTarget.playsLikePopup) {
+                activeTarget.playsLikePopup.remove();
+                activeTarget.playsLikePopup = null;
+            }
         }
         activeTarget = t;
-        // Add active glow to new selection
-        if (t && t.dotEl) {
-            t.dotEl.classList.add('active');
-        }
-        // Update sidebar for newly selected marker
-        if (t && playerLocation) {
+        // Select new: hide dot, show crosshair, create plays-like popup
+        if (t) {
+            t.dotEl.style.display = 'none';
+            if (t.crosshairEl) t.crosshairEl.style.display = 'block';
+
+            // Create plays-like popup anchored to the right of the marker
             const lngLat = t.marker.getLngLat();
-            const dist = calcDistance(playerLocation, [lngLat.lng, lngLat.lat]);
-            updateSidebar(Math.round(dist), lngLat.lng, lngLat.lat);
+            t.playsLikePopup = new maplibregl.Popup({
+                closeButton: false,
+                closeOnClick: false,
+                anchor: 'left',
+                offset: [22, 0],
+                className: 'playslike-popup'
+            })
+                .setLngLat(lngLat)
+                .setHTML('<div class="plays-like-box"><div class="pl-label">Plays Like</div><div class="pl-main">--</div></div>')
+                .addTo(map);
+
+            if (playerLocation) {
+                const dist = calcDistance(playerLocation, [lngLat.lng, lngLat.lat]);
+                updatePlaysLikePopup(Math.round(dist), lngLat.lng, lngLat.lat);
+            }
         }
     }
 
@@ -514,16 +509,20 @@ function initApp(MAPTILER_KEY) {
         updateLine(t.lineIdx, [playerLocation.lng, playerLocation.lat], [lngLat.lng, lngLat.lat]);
 
         if (t === activeTarget) {
-            updateSidebar(yards, lngLat.lng, lngLat.lat);
+            updatePlaysLikePopup(yards, lngLat.lng, lngLat.lat);
         }
     }
 
-    async function updateSidebar(yards, targetLng, targetLat) {
-        const sidebar = document.getElementById('sidebar');
-        sidebar.classList.add('visible');
+    async function updatePlaysLikePopup(yards, targetLng, targetLat) {
+        if (!activeTarget || !activeTarget.playsLikePopup) return;
 
         const targetElev = await fetchElevation(targetLat, targetLng);
-        calcPlaysLike(yards, playerElevation, targetElev, targetLng, targetLat);
+        const result = calcPlaysLike(yards, playerElevation, targetElev, targetLng, targetLat);
+
+        const colorClass = result.diff > 0 ? ' longer' : result.diff < 0 ? ' shorter' : '';
+        activeTarget.playsLikePopup.setHTML(
+            `<div class="plays-like-box"><div class="pl-label">Plays Like</div><div class="pl-main${colorClass}">${result.playsLike}y<span class="pl-club">${result.club}</span></div></div>`
+        );
     }
 
     async function addTarget(lngLat) {
@@ -534,6 +533,7 @@ function initApp(MAPTILER_KEY) {
             if (activeTarget === oldest) activeTarget = null;
             oldest.marker.remove();
             oldest.popup.remove();
+            if (oldest.playsLikePopup) oldest.playsLikePopup.remove();
             removeLine(oldest.lineIdx);
         }
 
@@ -543,9 +543,13 @@ function initApp(MAPTILER_KEY) {
         const dotEl = document.createElement('div');
         dotEl.className = `marker-dot ${DOT_CLASSES[idx % 5]}`;
 
+        const crosshairEl = createCrosshairSVG(LINE_COLORS[idx % 5]);
+        crosshairEl.style.display = 'none';
+
         const wrapper = document.createElement('div');
         wrapper.style.cssText = 'width:40px;height:40px;display:flex;align-items:center;justify-content:center;';
         wrapper.appendChild(dotEl);
+        wrapper.appendChild(crosshairEl);
 
         const marker = new maplibregl.Marker({ element: wrapper, draggable: true })
             .setLngLat(lngLat)
@@ -566,7 +570,7 @@ function initApp(MAPTILER_KEY) {
         addLine(lineIdx, LINE_COLORS[idx % 5]);
         updateLine(lineIdx, [playerLocation.lng, playerLocation.lat], [lngLat.lng, lngLat.lat]);
 
-        const target = { marker, popup, lineIdx, dotEl };
+        const target = { marker, popup, lineIdx, dotEl, crosshairEl, playsLikePopup: null };
         targets.push(target);
 
         // Tap marker to select it
@@ -582,6 +586,7 @@ function initApp(MAPTILER_KEY) {
         marker.on('drag', () => {
             const pos = marker.getLngLat();
             popup.setLngLat(pos);
+            if (target.playsLikePopup) target.playsLikePopup.setLngLat(pos);
             const d = calcDistance(playerLocation, [pos.lng, pos.lat]);
             const y = Math.round(d);
             popup.setHTML(`<div class="yard-popup">${y} yd</div>`);
@@ -593,7 +598,7 @@ function initApp(MAPTILER_KEY) {
             const d = calcDistance(playerLocation, [pos.lng, pos.lat]);
             const y = Math.round(d);
             popup.setHTML(`<div class="yard-popup">${y} yd</div>`);
-            updateSidebar(y, pos.lng, pos.lat);
+            updatePlaysLikePopup(y, pos.lng, pos.lat);
         });
 
         updateClearButton();
@@ -658,11 +663,11 @@ function initApp(MAPTILER_KEY) {
             const t = targets.pop();
             t.marker.remove();
             t.popup.remove();
+            if (t.playsLikePopup) t.playsLikePopup.remove();
             removeLine(t.lineIdx);
         }
         activeTarget = null;
         updateClearButton();
-        document.getElementById('sidebar').classList.remove('visible');
     }
 
     function updateClearButton() {
