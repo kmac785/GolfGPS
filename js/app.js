@@ -541,22 +541,35 @@ function initApp(MAPTILER_KEY) {
 
     async function updateCombinedCard(yards, targetLng, targetLat) {
         if (!activeTarget || !activeTarget.cardEl) return;
+        const cardEl = activeTarget.cardEl; // capture before any await
 
-        const yardsEl = activeTarget.cardEl.querySelector('.card-yards');
+        // Update yardage immediately
+        const yardsEl = cardEl.querySelector('.card-yards');
         if (yardsEl) yardsEl.textContent = yards + 'y';
 
+        // Show plays-like immediately using wind only (no elevation wait)
+        const quickResult = calcPlaysLike(yards, null, null, targetLng, targetLat);
+        const plMain = cardEl.querySelector('.card-pl-main');
+        if (plMain) {
+            const qColor = quickResult.diff > 0 ? ' longer' : quickResult.diff < 0 ? ' shorter' : '';
+            plMain.className = 'card-pl-main' + qColor;
+            plMain.innerHTML = `${quickResult.playsLike}y<span class="card-pl-club">${quickResult.club}</span>`;
+        }
+
+        // Fetch elevation then refine
         const targetElev = await fetchElevation(targetLat, targetLng);
+        if (!cardEl.isConnected) return; // card was removed while fetching
+
         const result = calcPlaysLike(yards, playerElevation, targetElev, targetLng, targetLat);
 
-        const plMain = activeTarget.cardEl.querySelector('.card-pl-main');
-        if (plMain) {
+        if (plMain && plMain.isConnected) {
             const colorClass = result.diff > 0 ? ' longer' : result.diff < 0 ? ' shorter' : '';
             plMain.className = 'card-pl-main' + colorClass;
             plMain.innerHTML = `${result.playsLike}y<span class="card-pl-club">${result.club}</span>`;
         }
 
-        const elevEl = activeTarget.cardEl.querySelector('.card-elev');
-        if (elevEl) {
+        const elevEl = cardEl.querySelector('.card-elev');
+        if (elevEl && elevEl.isConnected) {
             if (result.elevDiffFeet !== undefined && Math.abs(result.elevDiffFeet) >= 1) {
                 const ft = Math.round(Math.abs(result.elevDiffFeet));
                 const uphill = result.elevDiffFeet > 0;
