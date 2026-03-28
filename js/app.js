@@ -138,6 +138,7 @@ function initApp(MAPTILER_KEY) {
     let windSpeed = null;
     let windDeg = null;
     let windGust = null;
+    let temperature = null;
     let weatherFetchInterval = null;
 
     // ============================================================
@@ -289,7 +290,7 @@ function initApp(MAPTILER_KEY) {
     // ============================================================
     async function fetchWeather(lat, lng) {
         try {
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m&wind_speed_unit=mph`;
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m&wind_speed_unit=mph&temperature_unit=fahrenheit`;
             const resp = await fetch(url);
             const data = await resp.json();
 
@@ -297,8 +298,10 @@ function initApp(MAPTILER_KEY) {
                 windSpeed = Math.round(data.current.wind_speed_10m);
                 windDeg = data.current.wind_direction_10m;
                 windGust = data.current.wind_gusts_10m ? Math.round(data.current.wind_gusts_10m) : null;
+                temperature = data.current.temperature_2m != null ? Math.round(data.current.temperature_2m) : null;
 
                 document.getElementById('windBoxSpeed').textContent = windSpeed;
+                document.getElementById('windBoxTemp').textContent = temperature != null ? temperature + '°F' : '--°F';
                 document.getElementById('windBox').classList.add('visible');
                 // Show/hide gust arrows
                 const gustArrows = document.querySelectorAll('.wind-gust-arrow');
