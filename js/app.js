@@ -397,9 +397,10 @@ function initApp(MAPTILER_KEY) {
         let windAdjust = 0;
 
         // --- Elevation adjustment ---
+        let elevDiffFeet;
         if (playerElev !== null && targetElev !== null) {
             const elevDiffMeters = targetElev - playerElev;
-            const elevDiffFeet = elevDiffMeters * 3.28084;
+            elevDiffFeet = elevDiffMeters * 3.28084;
             elevAdjust = elevDiffFeet / 3;
         }
 
