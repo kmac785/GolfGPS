@@ -163,7 +163,12 @@ function initApp(MAPTILER_KEY) {
                 type: 'raster',
                 source: 'maptiler-satellite',
                 minzoom: 0,
-                maxzoom: 20
+                maxzoom: 20,
+                paint: {
+                    'raster-saturation': 0.4,
+                    'raster-brightness-min': 0.08,
+                    'raster-contrast': 0.15
+                }
             }]
         },
         center: [-95.2, 38.9],
