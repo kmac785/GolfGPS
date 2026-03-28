@@ -425,8 +425,8 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    padding: 8px 12px;
+    gap: 4px;
+    padding: 10px 16px;
     border-radius: 14px;
     background: rgba(0, 0, 0, 0.72);
     backdrop-filter: blur(12px);
@@ -446,15 +446,14 @@ body {
     gap: 4px;
 }
 .wind-box-label {
-    font-size: 10px;
+    font-size: 14px;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: rgba(255, 255, 255, 0.5);
+    letter-spacing: 0.3px;
+    color: #fff;
 }
 .wind-box-chevron {
-    width: 10px;
-    height: 10px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
     background: #1677ff;
     display: flex;
@@ -462,8 +461,8 @@ body {
     justify-content: center;
 }
 .wind-box-chevron svg {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
 }
 .wind-box-arrows {
     display: flex;
@@ -472,24 +471,24 @@ body {
     gap: 0;
 }
 .wind-box-arrow {
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
     flex-shrink: 0;
     transition: transform 0.5s ease;
 }
 .wind-gust-arrow {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
     flex-shrink: 0;
     transition: transform 0.5s ease;
 }
 .wind-box-speed {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 700;
     line-height: 1;
 }
 .wind-box-unit {
-    font-size: 10px;
+    font-size: 11px;
     color: rgba(255, 255, 255, 0.5);
 }
 
