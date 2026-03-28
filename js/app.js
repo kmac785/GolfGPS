@@ -431,7 +431,7 @@ function initApp(MAPTILER_KEY) {
         const diff = playsLike - Math.round(distYards);
         const suggestion = suggestClub(playsLike);
 
-        return { playsLike, diff, club: suggestion.club };
+        return { playsLike, diff, club: suggestion.club, elevDiffFeet };
     }
 
     // ============================================================
@@ -481,39 +481,120 @@ function initApp(MAPTILER_KEY) {
         );
     }
 
+    // ============================================================
+    // Combined yardage + plays-like card overlay
+    // ============================================================
+    const CARD_OFFSET_X = -115;
+    const CARD_OFFSET_Y = -70;
+
+    function createCombinedCard(t) {
+        const container = map.getContainer();
+
+        const overlay = document.createElement('div');
+        overlay.className = 'card-overlay';
+        container.appendChild(overlay);
+
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;';
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('stroke', 'rgba(255,255,255,0.35)');
+        line.setAttribute('stroke-width', '1.5');
+        svg.appendChild(line);
+        overlay.appendChild(svg);
+
+        const card = document.createElement('div');
+        card.className = 'combined-card';
+        card.innerHTML = `
+            <div class="card-left">
+                <span class="card-yards">--y</span>
+                <span class="card-elev"></span>
+            </div>
+            <div class="card-right">
+                <div class="card-pl-label">Plays Like</div>
+                <div class="card-pl-main">--</div>
+            </div>`;
+        overlay.appendChild(card);
+
+        t.cardOverlay = overlay;
+        t.cardLine = line;
+        t.cardEl = card;
+
+        positionCombinedCard(t);
+    }
+
+    function positionCombinedCard(t) {
+        if (!t.cardEl) return;
+        const lngLat = t.marker.getLngLat();
+        const pt = map.project(lngLat);
+        const cx = pt.x + CARD_OFFSET_X;
+        const cy = pt.y + CARD_OFFSET_Y;
+
+        t.cardEl.style.left = cx + 'px';
+        t.cardEl.style.top = cy + 'px';
+
+        t.cardLine.setAttribute('x1', pt.x);
+        t.cardLine.setAttribute('y1', pt.y);
+        t.cardLine.setAttribute('x2', cx);
+        t.cardLine.setAttribute('y2', cy);
+    }
+
+    async function updateCombinedCard(yards, targetLng, targetLat) {
+        if (!activeTarget || !activeTarget.cardEl) return;
+
+        const yardsEl = activeTarget.cardEl.querySelector('.card-yards');
+        if (yardsEl) yardsEl.textContent = yards + 'y';
+
+        const targetElev = await fetchElevation(targetLat, targetLng);
+        const result = calcPlaysLike(yards, playerElevation, targetElev, targetLng, targetLat);
+
+        const plMain = activeTarget.cardEl.querySelector('.card-pl-main');
+        if (plMain) {
+            const colorClass = result.diff > 0 ? ' longer' : result.diff < 0 ? ' shorter' : '';
+            plMain.className = 'card-pl-main' + colorClass;
+            plMain.innerHTML = `${result.playsLike}y<span class="card-pl-club">${result.club}</span>`;
+        }
+
+        const elevEl = activeTarget.cardEl.querySelector('.card-elev');
+        if (elevEl) {
+            if (result.elevDiffFeet !== undefined && Math.abs(result.elevDiffFeet) >= 1) {
+                const ft = Math.round(Math.abs(result.elevDiffFeet));
+                const uphill = result.elevDiffFeet > 0;
+                elevEl.textContent = uphill ? `↑ ${ft}ft` : `↓ ${ft}ft`;
+                elevEl.className = 'card-elev ' + (uphill ? 'card-elev-up' : 'card-elev-down');
+            } else {
+                elevEl.textContent = '';
+                elevEl.className = 'card-elev';
+            }
+        }
+    }
+
     function selectTarget(t) {
-        // Deselect previous: show dot, hide crosshair, remove plays-like popup
+        // Deselect previous: show dot, hide crosshair, remove combined card
         if (activeTarget) {
             activeTarget.dotEl.classList.remove('active');
             activeTarget.dotEl.style.display = '';
             if (activeTarget.crosshairEl) activeTarget.crosshairEl.style.display = 'none';
-            if (activeTarget.playsLikePopup) {
-                activeTarget.playsLikePopup.remove();
-                activeTarget.playsLikePopup = null;
+            if (activeTarget.cardOverlay) {
+                activeTarget.cardOverlay.remove();
+                activeTarget.cardOverlay = null;
+                activeTarget.cardEl = null;
+                activeTarget.cardLine = null;
             }
+            activeTarget.popup.getElement().style.display = '';
         }
         activeTarget = t;
-        // Select new: hide dot, show crosshair, create plays-like popup
+        // Select new: hide dot, show crosshair, create combined card
         if (t) {
             t.dotEl.style.display = 'none';
             if (t.crosshairEl) t.crosshairEl.style.display = 'block';
+            t.popup.getElement().style.display = 'none';
 
-            // Create plays-like popup anchored to the right of the marker
-            const lngLat = t.marker.getLngLat();
-            t.playsLikePopup = new maplibregl.Popup({
-                closeButton: false,
-                closeOnClick: false,
-                anchor: 'left',
-                offset: [28, 0],
-                className: 'playslike-popup'
-            })
-                .setLngLat(lngLat)
-                .setHTML('<div class="plays-like-box"><div class="pl-label">Plays Like</div><div class="pl-main">--</div></div>')
-                .addTo(map);
+            createCombinedCard(t);
 
             if (playerLocation) {
+                const lngLat = t.marker.getLngLat();
                 const dist = calcDistance(playerLocation, [lngLat.lng, lngLat.lat]);
-                updatePlaysLikePopup(Math.round(dist), lngLat.lng, lngLat.lat);
+                updateCombinedCard(Math.round(dist), lngLat.lng, lngLat.lat);
             }
         }
     }
@@ -527,20 +608,8 @@ function initApp(MAPTILER_KEY) {
         updateLine(t.lineIdx, [playerLocation.lng, playerLocation.lat], [lngLat.lng, lngLat.lat]);
 
         if (t === activeTarget) {
-            updatePlaysLikePopup(yards, lngLat.lng, lngLat.lat);
+            updateCombinedCard(yards, lngLat.lng, lngLat.lat);
         }
-    }
-
-    async function updatePlaysLikePopup(yards, targetLng, targetLat) {
-        if (!activeTarget || !activeTarget.playsLikePopup) return;
-
-        const targetElev = await fetchElevation(targetLat, targetLng);
-        const result = calcPlaysLike(yards, playerElevation, targetElev, targetLng, targetLat);
-
-        const colorClass = result.diff > 0 ? ' longer' : result.diff < 0 ? ' shorter' : '';
-        activeTarget.playsLikePopup.setHTML(
-            `<div class="plays-like-box"><div class="pl-label">Plays Like</div><div class="pl-main${colorClass}">${result.playsLike}y<span class="pl-club">${result.club}</span></div></div>`
-        );
     }
 
     async function addTarget(lngLat) {
@@ -551,7 +620,7 @@ function initApp(MAPTILER_KEY) {
             if (activeTarget === oldest) activeTarget = null;
             oldest.marker.remove();
             oldest.popup.remove();
-            if (oldest.playsLikePopup) oldest.playsLikePopup.remove();
+            if (oldest.cardOverlay) oldest.cardOverlay.remove();
             removeLine(oldest.lineIdx);
         }
 
@@ -588,7 +657,7 @@ function initApp(MAPTILER_KEY) {
         addLine(lineIdx, LINE_COLORS[idx % 5]);
         updateLine(lineIdx, [playerLocation.lng, playerLocation.lat], [lngLat.lng, lngLat.lat]);
 
-        const target = { marker, popup, lineIdx, dotEl, crosshairEl, playsLikePopup: null };
+        const target = { marker, popup, lineIdx, dotEl, crosshairEl, cardOverlay: null, cardEl: null, cardLine: null };
         targets.push(target);
 
         // Tap marker to select it
@@ -604,11 +673,13 @@ function initApp(MAPTILER_KEY) {
         marker.on('drag', () => {
             const pos = marker.getLngLat();
             popup.setLngLat(pos);
-            if (target.playsLikePopup) target.playsLikePopup.setLngLat(pos);
             const d = calcDistance(playerLocation, [pos.lng, pos.lat]);
             const y = Math.round(d);
             popup.setHTML(`<div class="yard-popup">${y}y</div>`);
             updateLine(lineIdx, [playerLocation.lng, playerLocation.lat], [pos.lng, pos.lat]);
+            positionCombinedCard(target);
+            const yardsEl = target.cardEl && target.cardEl.querySelector('.card-yards');
+            if (yardsEl) yardsEl.textContent = y + 'y';
         });
         marker.on('dragend', () => {
             dotEl.classList.remove('dragging');
@@ -616,7 +687,7 @@ function initApp(MAPTILER_KEY) {
             const d = calcDistance(playerLocation, [pos.lng, pos.lat]);
             const y = Math.round(d);
             popup.setHTML(`<div class="yard-popup">${y}y</div>`);
-            updatePlaysLikePopup(y, pos.lng, pos.lat);
+            updateCombinedCard(y, pos.lng, pos.lat);
         });
 
         updateClearButton();
@@ -681,7 +752,7 @@ function initApp(MAPTILER_KEY) {
             const t = targets.pop();
             t.marker.remove();
             t.popup.remove();
-            if (t.playsLikePopup) t.playsLikePopup.remove();
+            if (t.cardOverlay) t.cardOverlay.remove();
             removeLine(t.lineIdx);
         }
         activeTarget = null;
@@ -722,6 +793,8 @@ function initApp(MAPTILER_KEY) {
             document.getElementById('gpsStatus').classList.remove('hidden');
         }
     });
+
+    map.on('move', () => { if (activeTarget) positionCombinedCard(activeTarget); });
 
     map.on('dragstart', () => { isFollowing = false; });
 
