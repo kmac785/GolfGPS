@@ -182,7 +182,11 @@ function initApp(MAPTILER_KEY) {
         if (windDeg === null) return;
         const windTravelDeg = (windDeg + 180) % 360;
         const bearing = map.getBearing();
-        document.getElementById('windBoxArrow').style.transform = `rotate(${windTravelDeg - bearing}deg)`;
+        const rotation = `rotate(${windTravelDeg - bearing}deg)`;
+        document.getElementById('windBoxArrow').style.transform = rotation;
+        document.querySelectorAll('.wind-gust-arrow').forEach(el => {
+            el.style.transform = rotation;
+        });
     }
 
     const northBtn = document.getElementById('northBtn');
@@ -291,6 +295,11 @@ function initApp(MAPTILER_KEY) {
 
                 document.getElementById('windBoxSpeed').textContent = windSpeed;
                 document.getElementById('windBox').classList.add('visible');
+                // Show/hide gust arrows
+                const gustArrows = document.querySelectorAll('.wind-gust-arrow');
+                gustArrows.forEach(el => {
+                    el.style.display = (windGust && windGust > windSpeed) ? '' : 'none';
+                });
                 updateWindArrow();
             }
         } catch (e) {
@@ -352,20 +361,21 @@ function initApp(MAPTILER_KEY) {
     // ============================================================
     // Crosshair SVG factory
     // ============================================================
-    function createCrosshairSVG(color) {
-        const size = 36;
+    function createCrosshairSVG() {
+        const size = 48;
+        const c = 'rgba(255, 255, 255, 0.9)';
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
         svg.setAttribute('width', String(size));
         svg.setAttribute('height', String(size));
         svg.style.display = 'block';
         svg.innerHTML = `
-            <circle cx="18" cy="18" r="13" fill="none" stroke="${color}" stroke-width="1.5" opacity="0.85"/>
-            <line x1="18" y1="1" x2="18" y2="9" stroke="${color}" stroke-width="1.5" opacity="0.85"/>
-            <line x1="18" y1="27" x2="18" y2="35" stroke="${color}" stroke-width="1.5" opacity="0.85"/>
-            <line x1="1" y1="18" x2="9" y2="18" stroke="${color}" stroke-width="1.5" opacity="0.85"/>
-            <line x1="27" y1="18" x2="35" y2="18" stroke="${color}" stroke-width="1.5" opacity="0.85"/>
-            <circle cx="18" cy="18" r="2" fill="${color}" opacity="0.9"/>
+            <circle cx="24" cy="24" r="17" fill="none" stroke="${c}" stroke-width="2" opacity="0.85"/>
+            <line x1="24" y1="1" x2="24" y2="12" stroke="${c}" stroke-width="2" opacity="0.85"/>
+            <line x1="24" y1="36" x2="24" y2="47" stroke="${c}" stroke-width="2" opacity="0.85"/>
+            <line x1="1" y1="24" x2="12" y2="24" stroke="${c}" stroke-width="2" opacity="0.85"/>
+            <line x1="36" y1="24" x2="47" y2="24" stroke="${c}" stroke-width="2" opacity="0.85"/>
+            <circle cx="24" cy="24" r="2.5" fill="${c}" opacity="0.9"/>
         `;
         return svg;
     }
@@ -486,7 +496,7 @@ function initApp(MAPTILER_KEY) {
                 closeButton: false,
                 closeOnClick: false,
                 anchor: 'left',
-                offset: [22, 0],
+                offset: [28, 0],
                 className: 'playslike-popup'
             })
                 .setLngLat(lngLat)
@@ -505,7 +515,7 @@ function initApp(MAPTILER_KEY) {
         const lngLat = t.marker.getLngLat();
         const dist = calcDistance(playerLocation, [lngLat.lng, lngLat.lat]);
         const yards = Math.round(dist);
-        t.popup.setHTML(`<div class="yard-popup">${yards} yd</div>`);
+        t.popup.setHTML(`<div class="yard-popup">${yards}y</div>`);
         updateLine(t.lineIdx, [playerLocation.lng, playerLocation.lat], [lngLat.lng, lngLat.lat]);
 
         if (t === activeTarget) {
@@ -543,11 +553,11 @@ function initApp(MAPTILER_KEY) {
         const dotEl = document.createElement('div');
         dotEl.className = `marker-dot ${DOT_CLASSES[idx % 5]}`;
 
-        const crosshairEl = createCrosshairSVG(LINE_COLORS[idx % 5]);
+        const crosshairEl = createCrosshairSVG();
         crosshairEl.style.display = 'none';
 
         const wrapper = document.createElement('div');
-        wrapper.style.cssText = 'width:40px;height:40px;display:flex;align-items:center;justify-content:center;';
+        wrapper.style.cssText = 'width:52px;height:52px;display:flex;align-items:center;justify-content:center;';
         wrapper.appendChild(dotEl);
         wrapper.appendChild(crosshairEl);
 
@@ -564,7 +574,7 @@ function initApp(MAPTILER_KEY) {
             className: ''
         })
             .setLngLat(lngLat)
-            .setHTML(`<div class="yard-popup">${yards} yd</div>`)
+            .setHTML(`<div class="yard-popup">${yards}y</div>`)
             .addTo(map);
 
         addLine(lineIdx, LINE_COLORS[idx % 5]);
@@ -589,7 +599,7 @@ function initApp(MAPTILER_KEY) {
             if (target.playsLikePopup) target.playsLikePopup.setLngLat(pos);
             const d = calcDistance(playerLocation, [pos.lng, pos.lat]);
             const y = Math.round(d);
-            popup.setHTML(`<div class="yard-popup">${y} yd</div>`);
+            popup.setHTML(`<div class="yard-popup">${y}y</div>`);
             updateLine(lineIdx, [playerLocation.lng, playerLocation.lat], [pos.lng, pos.lat]);
         });
         marker.on('dragend', () => {
@@ -597,7 +607,7 @@ function initApp(MAPTILER_KEY) {
             const pos = marker.getLngLat();
             const d = calcDistance(playerLocation, [pos.lng, pos.lat]);
             const y = Math.round(d);
-            popup.setHTML(`<div class="yard-popup">${y} yd</div>`);
+            popup.setHTML(`<div class="yard-popup">${y}y</div>`);
             updatePlaysLikePopup(y, pos.lng, pos.lat);
         });
 
