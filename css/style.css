@@ -277,7 +277,8 @@ body {
 .clear-btn {
     position: fixed;
     bottom: 32px;
-    left: 16px;
+    left: 50%;
+    transform: translateX(-50%);
     height: 40px;
     padding: 0 16px;
     border-radius: 20px;
@@ -298,7 +299,7 @@ body {
     transition: background 0.2s, transform 0.15s;
     box-shadow: 0 2px 12px rgba(0,0,0,0.4);
 }
-.clear-btn:active { transform: scale(0.95); background: rgba(0, 0, 0, 0.9); }
+.clear-btn:active { transform: translateX(-50%) scale(0.95); background: rgba(0, 0, 0, 0.9); }
 .clear-btn.visible { display: flex; }
 .clear-btn svg { width: 14px; height: 14px; }
 
