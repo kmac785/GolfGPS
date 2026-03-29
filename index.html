@@ -5,110 +5,125 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Golf GPS</title>
 
-    <!-- PWA -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#000000">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Golf GPS">
-    <link rel="apple-touch-icon" href="icons/icon-192.png">
-    <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+```
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Golf GPS">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 
-    <!-- Map libs -->
-    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-    <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
+<!-- Map libs -->
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 
-    <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css">
+```
+
 </head>
 <body>
 
-    <!-- Settings overlay -->
-    <div class="setup-overlay" id="setupOverlay">
-        <div class="setup-card">
-            <div class="setup-icon">
-                <svg viewBox="0 0 48 48" fill="none" stroke="#30D158" stroke-width="2.5" stroke-linecap="round">
-                    <circle cx="24" cy="28" r="12" stroke-dasharray="6 3" opacity="0.5"/>
-                    <circle cx="24" cy="28" r="2" fill="#FF453A" stroke="none"/>
-                    <line x1="24" y1="28" x2="24" y2="12"/>
-                    <path d="M24 12 L34 17 L24 22Z" fill="#FF453A" stroke="none"/>
-                </svg>
-            </div>
-            <h1>Golf GPS</h1>
-
-            <!-- API Key section -->
-            <div class="settings-section">
-                <div class="settings-label">MapTiler API Key</div>
-                <p class="settings-hint">Get a key from <a href="https://cloud.maptiler.com/account/keys/" target="_blank" rel="noopener">MapTiler Cloud</a></p>
-                <input type="text" id="apiKeyInput" placeholder="Your MapTiler API key" autocomplete="off" spellcheck="false">
-            </div>
-
-            <!-- Club distances section -->
-            <div class="settings-section">
-                <div class="settings-label">Club Distances <span class="settings-hint-inline">(carry yds)</span></div>
-                <div class="club-editor" id="clubEditor"></div>
-            </div>
-
-            <button id="saveKeyBtn">Save</button>
+```
+<!-- Settings overlay -->
+<div class="setup-overlay" id="setupOverlay">
+    <div class="setup-card">
+        <div class="setup-icon">
+            <svg viewBox="0 0 48 48" fill="none" stroke="#30D158" stroke-width="2.5" stroke-linecap="round">
+                <circle cx="24" cy="28" r="12" stroke-dasharray="6 3" opacity="0.5"/>
+                <circle cx="24" cy="28" r="2" fill="#FF453A" stroke="none"/>
+                <line x1="24" y1="28" x2="24" y2="12"/>
+                <path d="M24 12 L34 17 L24 22Z" fill="#FF453A" stroke="none"/>
+            </svg>
         </div>
+        <h1>Golf GPS</h1>
+
+        <!-- API Key section -->
+        <div class="settings-section">
+            <div class="settings-label">MapTiler API Key</div>
+            <p class="settings-hint">Get a key from <a href="https://cloud.maptiler.com/account/keys/" target="_blank" rel="noopener">MapTiler Cloud</a></p>
+            <input type="text" id="apiKeyInput" placeholder="Your MapTiler API key" autocomplete="off" spellcheck="false">
+        </div>
+
+        <!-- Club distances section -->
+        <div class="settings-section">
+            <div class="settings-label">Club Distances <span class="settings-hint-inline">(carry yds)</span></div>
+            <div class="club-editor" id="clubEditor"></div>
+        </div>
+
+        <button id="saveKeyBtn">Save</button>
     </div>
+</div>
 
-    <div class="gps-status" id="gpsStatus">
-        <span class="dot searching" id="gpsDot"></span>
-        <span id="gpsText">Searching for GPS…</span>
+<div class="gps-status" id="gpsStatus">
+    <span class="dot searching" id="gpsDot"></span>
+    <span id="gpsText">Searching for GPS…</span>
+</div>
+
+<!-- Settings button -->
+<button class="settings-btn" id="settingsBtn" title="Settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+</button>
+
+<button class="recenter-btn" id="recenterBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+    </svg>
+</button>
+
+<!-- Compass heading toggle button -->
+<button class="heading-btn" id="headingBtn" title="Toggle compass heading">
+    <svg class="heading-icon" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2L8 12h8L12 2z" fill="currentColor" opacity="0.9"/>
+        <path d="M12 22l4-10H8l4 10z" fill="currentColor" opacity="0.3"/>
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.5"/>
+    </svg>
+</button>
+
+<button class="north-btn" id="northBtn">
+    <svg class="north-arrow" viewBox="0 0 24 24" fill="none">
+        <path d="M12 3l4 8h-8l4-8z" fill="#FF453A" stroke="#FF453A"/>
+        <path d="M12 21l-4-8h8l-4 8z" fill="rgba(255,255,255,0.5)" stroke="rgba(255,255,255,0.5)"/>
+    </svg>
+</button>
+
+<div class="marker-count" id="markerCount"></div>
+
+<button class="clear-btn" id="clearBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+    Clear All
+</button>
+
+<!-- Wind box (bottom-left, always visible once wind data arrives) -->
+<div class="wind-box" id="windBox">
+    <div class="wind-box-label-row">
+        <span class="wind-box-label">Wind</span>
     </div>
-
-    <!-- Settings button -->
-    <button class="settings-btn" id="settingsBtn" title="Settings">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>
-    </button>
-
-    <button class="recenter-btn" id="recenterBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
-        </svg>
-    </button>
-
-    <button class="north-btn" id="northBtn">
-        <svg class="north-arrow" viewBox="0 0 24 24" fill="none">
-            <path d="M12 3l4 8h-8l4-8z" fill="#FF453A" stroke="#FF453A"/>
-            <path d="M12 21l-4-8h8l-4 8z" fill="rgba(255,255,255,0.5)" stroke="rgba(255,255,255,0.5)"/>
-        </svg>
-    </button>
-
-    <div class="marker-count" id="markerCount"></div>
-
-    <button class="clear-btn" id="clearBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-        Clear All
-    </button>
-
-    <!-- Wind box (bottom-left, always visible once wind data arrives) -->
-    <div class="wind-box" id="windBox">
-        <div class="wind-box-label-row">
-            <span class="wind-box-label">Wind</span>
-        </div>
-        <div class="wind-box-arrows" id="windBoxArrows">
-            <span class="wind-gust-arrow">↑</span>
-            <span class="wind-box-arrow" id="windBoxArrow">↑</span>
-            <span class="wind-gust-arrow">↑</span>
-        </div>
-        <div class="wind-box-speed-row">
-            <span class="wind-box-speed" id="windBoxSpeed">--</span>
-            <span class="wind-box-unit">mph</span>
-        </div>
-        <div class="wind-box-temp" id="windBoxTemp">--°F</div>
+    <div class="wind-box-arrows" id="windBoxArrows">
+        <span class="wind-gust-arrow">↑</span>
+        <span class="wind-box-arrow" id="windBoxArrow">↑</span>
+        <span class="wind-gust-arrow">↑</span>
     </div>
+    <div class="wind-box-speed-row">
+        <span class="wind-box-speed" id="windBoxSpeed">--</span>
+        <span class="wind-box-unit">mph</span>
+    </div>
+    <div class="wind-box-temp" id="windBoxTemp">--°F</div>
+</div>
 
-    <div id="map"></div>
+<div id="map"></div>
 
-    <script src="js/app.js"></script>
+<script src="js/app.js"></script>
+```
+
 </body>
 </html>
