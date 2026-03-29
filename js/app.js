@@ -122,7 +122,6 @@ navigator.serviceWorker.register(‘service-worker.js’);
 function initApp(MAPTILER_KEY) {
 window._appInitialized = true;
 
-```
 // State
 let playerLocation = null;
 let playerElevation = null;
@@ -953,6 +952,5 @@ map.on('dragstart', () => {
 // Init
 // ============================================================
 map.on('load', () => { startGPS(); });
-```
 
 }
