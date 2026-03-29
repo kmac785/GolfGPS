@@ -244,341 +244,40 @@ body {
 .recenter-btn:active { transform: scale(0.92); background: rgba(0, 0, 0, 0.9); }
 .recenter-btn svg { width: 22px; height: 22px; }
 
-/* ==================== North button ==================== */
-.north-btn {
+/* ==================== Heading (compass) toggle button ==================== */
+.heading-btn {
     position: fixed;
-    bottom: 200px;
+    bottom: 92px;
     right: 16px;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     background: rgba(0, 0, 0, 0.65);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border: 1.5px solid rgba(255, 255, 255, 0.12);
-    color: #fff;
-    display: none;
+    color: rgba(255, 255, 255, 0.6);
+    display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     z-index: 1000;
-    transition: background 0.2s, transform 0.3s;
+    transition: background 0.2s, transform 0.15s, color 0.2s, border-color 0.2s;
     box-shadow: 0 2px 10px rgba(0,0,0,0.3);
 }
-.north-btn:active { transform: scale(0.9); }
-.north-btn.visible { display: flex; }
-.north-btn .north-arrow {
-    width: 18px;
-    height: 18px;
-    transition: transform 0.2s ease;
-}
-
-/* ==================== Clear ALL button ==================== */
-.clear-btn {
-    position: fixed;
-    bottom: 32px;
-    left: 50%;
-    transform: translateX(-50%);
-    height: 40px;
-    padding: 0 16px;
-    border-radius: 20px;
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1.5px solid rgba(255, 255, 255, 0.15);
-    color: #fff;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    cursor: pointer;
-    z-index: 1000;
-    transition: background 0.2s, transform 0.15s;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
-}
-.clear-btn:active { transform: translateX(-50%) scale(0.95); background: rgba(0, 0, 0, 0.9); }
-.clear-btn.visible { display: flex; }
-.clear-btn svg { width: 14px; height: 14px; }
-
-/* ==================== Marker count badge ==================== */
-.marker-count {
-    position: fixed;
-    bottom: 78px;
-    left: 16px;
-    font-size: 11px;
-    color: rgba(255,255,255,0.5);
-    display: none;
-    z-index: 1000;
-}
-.marker-count.visible { display: block; }
-
-/* ==================== Tap ripple ==================== */
-.tap-ripple {
-    position: fixed;
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.6);
-    pointer-events: none;
-    z-index: 999;
-    transform: translate(-50%, -50%) scale(0);
-    animation: ripple-out 0.5s ease-out forwards;
-}
-@keyframes ripple-out {
-    0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
-    100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
-}
-
-/* ==================== Custom marker dots ==================== */
-.marker-dot {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    border: 2px solid #fff;
-    cursor: grab;
-    transition: transform 0.15s ease;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.5);
-}
-.marker-dot:active { cursor: grabbing; }
-.marker-dot.dragging { transform: scale(1.4); }
-.marker-dot.c1 { background: #FF453A; }
-.marker-dot.c2 { background: #30D158; }
-.marker-dot.c3 { background: #FFD60A; }
-.marker-dot.c4 { background: #BF5AF2; }
-.marker-dot.c5 { background: #64D2FF; }
-
-/* Active/selected marker glow */
-.marker-dot.active {
-    transform: scale(1.2);
-    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.35), 0 1px 4px rgba(0,0,0,0.5);
-}
-.marker-dot.active.c1 { box-shadow: 0 0 0 4px rgba(255, 69, 58, 0.4), 0 0 12px rgba(255, 69, 58, 0.3); }
-.marker-dot.active.c2 { box-shadow: 0 0 0 4px rgba(48, 209, 88, 0.4), 0 0 12px rgba(48, 209, 88, 0.3); }
-.marker-dot.active.c3 { box-shadow: 0 0 0 4px rgba(255, 214, 10, 0.4), 0 0 12px rgba(255, 214, 10, 0.3); }
-.marker-dot.active.c4 { box-shadow: 0 0 0 4px rgba(191, 90, 242, 0.4), 0 0 12px rgba(191, 90, 242, 0.3); }
-.marker-dot.active.c5 { box-shadow: 0 0 0 4px rgba(100, 210, 255, 0.4), 0 0 12px rgba(100, 210, 255, 0.3); }
-
-/* ==================== Yardage popup ==================== */
-.yard-popup {
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: #fff;
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 18px;
-    font-weight: 700;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    white-space: nowrap;
-    pointer-events: none;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-}
-.maplibregl-popup-content {
-    background: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    border-radius: 0 !important;
-}
-.maplibregl-popup-tip {
-    border-top-color: rgba(0, 0, 0, 0.85) !important;
-}
-.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
-    border-top-color: rgba(0, 0, 0, 0.85) !important;
-}
-.maplibregl-popup-anchor-top .maplibregl-popup-tip {
-    border-bottom-color: rgba(0, 0, 0, 0.85) !important;
-}
-
-/* ==================== Player dot ==================== */
-.player-dot-outer {
+.heading-btn:active { transform: scale(0.9); }
+.heading-btn .heading-icon {
     width: 22px;
     height: 22px;
-    border-radius: 50%;
+    transition: transform 0.3s ease;
+}
+.heading-btn.active {
     background: rgba(0, 122, 255, 0.25);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    animation: pulse-ring 2s ease-out infinite;
-}
-.player-dot-inner {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: #007AFF;
-    border: 2px solid #fff;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.4);
-}
-@keyframes pulse-ring {
-    0% { box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.4); }
-    70% { box-shadow: 0 0 0 12px rgba(0, 122, 255, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(0, 122, 255, 0); }
+    border-color: rgba(0, 122, 255, 0.5);
+    color: #007AFF;
 }
 
-/* ==================== Wind box (bottom-left) ==================== */
-.wind-box {
+/* ==================== North button ==================== */
+.north-btn {
     position: fixed;
-    bottom: max(env(safe-area-inset-bottom), 10px);
-    left: 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    padding: 8px 12px;
-    border-radius: 14px;
-    background: rgba(0, 0, 0, 0.72);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #fff;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    z-index: 1000;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-.wind-box.visible { opacity: 1; }
-.wind-box-label-row {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-.wind-box-label {
-    font-size: 14px;
-    font-weight: 600;
-    letter-spacing: 0.3px;
-    color: #fff;
-}
-.wind-box-arrows {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    line-height: 0.75;
-}
-.wind-box-arrow {
-    font-size: 22px;
-    display: inline-block;
-    transition: transform 0.5s ease;
-    color: rgba(255, 255, 255, 0.88);
-    line-height: 1;
-}
-.wind-gust-arrow {
-    font-size: 15px;
-    display: inline-block;
-    transition: transform 0.5s ease;
-    color: rgba(255, 255, 255, 0.35);
-    line-height: 0.9;
-}
-.wind-box-speed-row {
-    display: flex;
-    align-items: baseline;
-    gap: 3px;
-}
-.wind-box-speed {
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 1;
-}
-.wind-box-unit {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.5);
-}
-.wind-box-temp {
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.7);
-    line-height: 1;
-    margin-top: 4px;
-}
-
-/* ==================== Combined yardage + plays like card ==================== */
-.card-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 2;
-}
-
-.combined-card {
-    position: absolute;
-    display: flex;
-    border-radius: 28px;
-    overflow: hidden;
-    box-shadow: 0 3px 14px rgba(0,0,0,0.55);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    white-space: nowrap;
-    transform: translate(-50%, -50%);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-}
-
-.card-left {
-    background: rgba(0, 0, 0, 0.92);
-    color: #fff;
-    padding: 10px 16px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.card-yards {
-    font-size: 26px;
-    font-weight: 800;
-    line-height: 1;
-}
-
-.card-elev {
-    font-size: 12px;
-    font-weight: 600;
-    margin-top: 3px;
-    line-height: 1;
-}
-.card-elev-up { color: #4cd964; }
-.card-elev-down { color: #ff453a; }
-
-.card-right {
-    background: rgba(38, 38, 38, 0.88);
-    padding: 8px 16px 8px 14px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    border-left: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.card-pl-label {
-    font-size: 10px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.45);
-    margin-bottom: 3px;
-    letter-spacing: 0.3px;
-}
-
-.card-pl-main {
-    font-size: 22px;
-    font-weight: 800;
-    color: #fff;
-    line-height: 1;
-}
-.card-pl-main.longer { color: #ff6b4a; }
-.card-pl-main.shorter { color: #4cd964; }
-
-.card-pl-club {
-    font-size: 17px;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.65);
-    margin-left: 3px;
-}
-
-/* ==================== Crosshair marker ==================== */
-.marker-crosshair {
-    display: none;
-}
-.marker-crosshair.active {
-    display: block;
-}
+    bottom: 200px;
