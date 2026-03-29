@@ -244,39 +244,6 @@ body {
 .recenter-btn:active { transform: scale(0.92); background: rgba(0, 0, 0, 0.9); }
 .recenter-btn svg { width: 22px; height: 22px; }
 
-/* ==================== Heading (compass) toggle button ==================== */
-.heading-btn {
-    position: fixed;
-    bottom: 92px;
-    right: 16px;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.65);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1.5px solid rgba(255, 255, 255, 0.12);
-    color: rgba(255, 255, 255, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 1000;
-    transition: background 0.2s, transform 0.15s, color 0.2s, border-color 0.2s;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-}
-.heading-btn:active { transform: scale(0.9); }
-.heading-btn .heading-icon {
-    width: 22px;
-    height: 22px;
-    transition: transform 0.3s ease;
-}
-.heading-btn.active {
-    background: rgba(0, 122, 255, 0.25);
-    border-color: rgba(0, 122, 255, 0.5);
-    color: #007AFF;
-}
-
 /* ==================== North button ==================== */
 .north-btn {
     position: fixed;
