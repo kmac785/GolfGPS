@@ -125,6 +125,7 @@ function initApp(MAPTILER_KEY) {
     // State
     let playerLocation = null;
     let playerElevation = null;
+    let lastElevFetchLoc = null;
     let playerMarker = null;
     let isFollowing = true;
 
@@ -222,8 +223,13 @@ function initApp(MAPTILER_KEY) {
 
         navigator.geolocation.watchPosition(
             (pos) => {
-                const { latitude, longitude, accuracy } = pos.coords;
+                const { latitude, longitude, accuracy, altitude, altitudeAccuracy } = pos.coords;
                 playerLocation = { lat: latitude, lng: longitude };
+
+                // Use GPS altitude directly when accurate enough — always current, no API needed
+                if (altitude !== null && altitudeAccuracy !== null && altitudeAccuracy < 50) {
+                    playerElevation = altitude; // meters, same unit as MapTiler
+                }
 
                 // Update GPS status
                 const statusEl = document.getElementById('gpsStatus');
@@ -264,6 +270,15 @@ function initApp(MAPTILER_KEY) {
                     }, 300000);
                 } else {
                     playerMarker.setLngLat([longitude, latitude]);
+                }
+
+                // Fallback for devices without GPS altitude: re-fetch MapTiler elevation
+                // whenever player moves >15 yards instead of waiting the full 5-minute interval
+                if (altitude === null || altitudeAccuracy === null || altitudeAccuracy >= 50) {
+                    if (!lastElevFetchLoc || calcDistance(lastElevFetchLoc, [longitude, latitude]) > 15) {
+                        lastElevFetchLoc = { lat: latitude, lng: longitude };
+                        fetchPlayerElevation(latitude, longitude);
+                    }
                 }
 
                 if (isFollowing) {
@@ -575,6 +590,9 @@ function initApp(MAPTILER_KEY) {
                 const uphill = result.elevDiffFeet > 0;
                 elevEl.textContent = uphill ? `↑ ${ft}ft` : `↓ ${ft}ft`;
                 elevEl.className = 'card-elev ' + (uphill ? 'card-elev-up' : 'card-elev-down');
+            } else if (playerElevation === null || targetElev === null) {
+                elevEl.textContent = 'elev N/A';
+                elevEl.className = 'card-elev';
             } else {
                 elevEl.textContent = '';
                 elevEl.className = 'card-elev';
