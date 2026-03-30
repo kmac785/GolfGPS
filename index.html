@@ -103,14 +103,18 @@
             <span class="wind-box-label">Wind</span>
         </div>
         <div class="wind-box-arrows" id="windBoxArrows">
-            <span class="wind-gust-arrow">↑</span>
-            <span class="wind-box-arrow" id="windBoxArrow">↑</span>
-            <span class="wind-gust-arrow">↑</span>
+            <svg class="wind-arrow-svg" id="windArrowSvg" viewBox="0 0 24 24"
+                 fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 3l5 9H7l5-9z" fill="rgba(255,255,255,0.88)"/>
+                <line x1="12" y1="12" x2="12" y2="21"
+                      stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+            </svg>
         </div>
         <div class="wind-box-speed-row">
             <span class="wind-box-speed" id="windBoxSpeed">--</span>
             <span class="wind-box-unit">mph</span>
         </div>
+        <div class="wind-box-gust" id="windBoxGust" style="display:none;">G: --mph</div>
         <div class="wind-box-temp" id="windBoxTemp">--°F</div>
     </div>
 
