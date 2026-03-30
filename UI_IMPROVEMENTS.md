@@ -8,7 +8,6 @@ A comprehensive step-by-step guide covering all recommended UX improvements, org
 
 - 🔴 **High** — Directly impacts usability on-course
 - 🟡 **Medium** — Improves polish and reliability
-- 🟢 **Low** — Accessibility and edge cases
 
 ---
 
@@ -57,28 +56,9 @@ A comprehensive step-by-step guide covering all recommended UX improvements, org
 
 ---
 
-### Step 3 — Relocate the Marker Count Badge 🟡
-
-**File:** `css/style.css`
-
-**Problem:** `.marker-count` sits at `bottom: 78px; left: 16px` — directly overlaps the wind box which is also positioned bottom-left.
-
-**Change:**
-```css
-.marker-count {
-    top: max(env(safe-area-inset-top), 10px);
-    left: 12px;
-    bottom: unset;
-}
-```
-
-**UX Benefit:** Wind box and marker count no longer compete for the same screen space. Bottom-left stays clean for wind data.
-
----
-
 ## Part 2 — Wind Box Improvements
 
-### Step 4 — Convert Wind Arrows to Rotating SVG 🟡
+### Step 3 — Convert Wind Arrows to Rotating SVG 🟡
 
 **Files:** `index.html`, `css/style.css`, `js/app.js`
 
@@ -122,7 +102,7 @@ function updateWindArrow() {
 
 ---
 
-### Step 5 — Add Gust vs. Sustained Label 🟡
+### Step 4 — Add Gust vs. Sustained Label 🟡
 
 **Files:** `index.html`, `css/style.css`, `js/app.js`
 
@@ -162,7 +142,7 @@ if (gustEl) {
 
 ## Part 3 — Yardage Card Improvements
 
-### Step 6 — Fix Yardage Card Typography Hierarchy 🔴
+### Step 5 — Fix Yardage Card Typography Hierarchy 🔴
 
 **File:** `css/style.css`
 
@@ -185,7 +165,7 @@ if (gustEl) {
 
 ---
 
-### Step 7 — Fix Yardage Card Position Offset 🔴
+### Step 6 — Fix Yardage Card Position Offset 🔴
 
 **File:** `css/style.css`
 
@@ -204,7 +184,7 @@ if (gustEl) {
 
 ## Part 4 — GPS Status Banner
 
-### Step 8 — Shrink GPS Banner After Lock 🟡
+### Step 7 — Shrink GPS Banner After Lock 🟡
 
 **Files:** `css/style.css`, `js/app.js`
 
@@ -230,153 +210,15 @@ statusEl.classList.add('locked-pill');
 }
 ```
 
-**UX Benefit:** After GPS locks, a compact pill replaces the full-width banner — the top of the map stays clear and it looks polished, similar to Apple Maps.
+**UX Benefit:** After GPS locks, a compact pill replaces the full-width banner — the top of the map stays clear and looks polished, similar to Apple Maps.
 
 ---
 
-## Part 5 — Settings Overlay
-
-### Step 9 — Group Clubs by Category 🟡
-
-**File:** `js/app.js` — update `renderClubEditor()`
-
-**Problem:** All clubs render as a flat 2-column grid with no grouping. Visually overwhelming with 12+ entries and no hierarchy.
-
-**Change:**
-```js
-function renderClubEditor() {
-    const editor = document.getElementById('clubEditor');
-    const clubs = getClubs();
-    editor.innerHTML = '';
-
-    const groups = [
-        { label: 'Driver & Woods', indices: [0, 1, 2] },
-        { label: 'Irons',          indices: [3, 4, 5, 6, 7, 8] },
-        { label: 'Wedges',         indices: [9, 10, 11] }
-    ];
-
-    groups.forEach(group => {
-        const header = document.createElement('div');
-        header.className = 'club-group-header';
-        header.textContent = group.label;
-        editor.appendChild(header);
-
-        const grid = document.createElement('div');
-        grid.className = 'club-editor-grid';
-
-        group.indices.forEach(i => {
-            if (!clubs[i]) return;
-            const c = clubs[i];
-            const row = document.createElement('div');
-            row.className = 'club-row';
-            row.innerHTML = `<span class="club-name">${c.club}</span>
-                             <input type="number" data-idx="${i}" value="${c.carry}"
-                                    inputmode="numeric" min="0" max="400">`;
-            grid.appendChild(row);
-        });
-        editor.appendChild(grid);
-    });
-}
-```
-
-**Add to `css/style.css`:**
-```css
-.club-group-header {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    color: rgba(255, 255, 255, 0.3);
-    margin: 10px 0 4px;
-}
-.club-editor-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 5px;
-    margin-bottom: 4px;
-}
-```
-
-**UX Benefit:** Users find their club faster without scanning a flat list. Group headers give instant visual orientation.
-
----
-
-## Part 6 — Accessibility
-
-### Step 10 — Add `aria-label` to All Icon Buttons 🟢
-
-**File:** `index.html`
-
-**Problem:** All icon-only buttons have no `aria-label` — invisible to screen readers and missing browser tooltip support.
-
-**Change:**
-```html
-<button class="settings-btn" id="settingsBtn" aria-label="Open settings" title="Settings">
-<button class="recenter-btn" id="recenterBtn" aria-label="Re-center map on my location" title="Re-center">
-<button class="north-btn" id="northBtn" aria-label="Reset map to face north" title="Reset North">
-<button class="clear-btn" id="clearBtn" aria-label="Clear all markers" title="Clear All">
-```
-
-**UX Benefit:** Accessibility compliance. Also improves discoverability — `title` attributes show tooltips on desktop when testing.
-
----
-
-### Step 11 — Add Number Labels to Marker Dots 🟢
-
-**Files:** `js/app.js`, `css/style.css`
-
-**Problem:** Markers c1–c5 are distinguished by color only. Fails color-blind users and makes multi-marker tracking ambiguous.
-
-**Change in `js/app.js`** — inside `addTarget()`, when creating `dotEl`:
-```js
-const dotEl = document.createElement('div');
-dotEl.className = `marker-dot ${DOT_CLASSES[idx % 5]}`;
-dotEl.textContent = String(idx + 1);
-```
-
-**Change in `css/style.css`:**
-```css
-.marker-dot {
-    width: 20px;
-    height: 20px;
-    font-size: 11px;
-    font-weight: 700;
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-```
-
-**UX Benefit:** Numbered markers let you reference "Marker 2 is front of green" when playing with others. Works for color-blind players too.
-
----
-
-### Step 12 — Remove `user-scalable=no` 🟢
-
-**File:** `index.html`
-
-**Problem:** `user-scalable=no` blocks pinch-zoom for accessibility. It's also ignored by iOS 10+ anyway.
-
-**Change:**
-```html
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-```
-
-Then in `js/app.js`, if needed to prevent accidental double-tap zoom:
-```js
-map.doubleClickZoom.disable();
-```
-
-**UX Benefit:** Restores accessibility zoom for low-vision users without breaking map touch interactions.
-
----
-
-## Part 7 — Auto-Orient Map to Phone Heading
+## Part 5 — Auto-Orient Map to Phone Heading
 
 Automatically rotates the map to match the direction the phone is pointed, eliminating the need to manually pan and orient before placing a target.
 
-### Step 13 — Add Heading State Variables 🔴
+### Step 8 — Add Heading State Variables 🔴
 
 **File:** `js/app.js` — add to the State block inside `initApp()`:
 
@@ -387,7 +229,7 @@ let headingLocked = false;
 
 ---
 
-### Step 14 — Read GPS Heading While Moving 🔴
+### Step 9 — Read GPS Heading While Moving 🔴
 
 **File:** `js/app.js` — inside the `watchPosition` success callback, after `playerLocation` is set:
 
@@ -405,7 +247,7 @@ if (pos.coords.heading !== null &&
 
 ---
 
-### Step 15 — Add DeviceOrientation Compass (Works at Rest) 🔴
+### Step 10 — Add DeviceOrientation Compass (Works at Rest) 🔴
 
 **File:** `js/app.js` — add these functions inside `initApp()`:
 
@@ -446,7 +288,7 @@ function handleOrientation(e) {
 
 ---
 
-### Step 16 — Apply Heading to Map 🔴
+### Step 11 — Apply Heading to Map 🔴
 
 **File:** `js/app.js`:
 
@@ -467,7 +309,7 @@ function applyHeading() {
 
 ---
 
-### Step 17 — Add Heading Toggle Button 🔴
+### Step 12 — Add Heading Toggle Button 🔴
 
 **File:** `index.html` — add after the recenter button:
 
@@ -517,7 +359,7 @@ function applyHeading() {
 
 ---
 
-### Step 18 — Wire Up Toggle + Update Recenter 🔴
+### Step 13 — Wire Up Toggle + Update Recenter 🔴
 
 **File:** `js/app.js` — add inside `initApp()`:
 
@@ -561,7 +403,7 @@ document.getElementById('recenterBtn').addEventListener('click', (e) => {
 
 ---
 
-### Step 19 — Add Directional Arrow to Player Dot 🟡
+### Step 14 — Add Directional Arrow to Player Dot 🟡
 
 **File:** `js/app.js` — update player marker element creation inside `startGPS()`:
 
@@ -608,37 +450,29 @@ el.innerHTML = `
 ### css/style.css
 - [ ] Step 1 — Settings & north button tap targets (44px)
 - [ ] Step 2 — North button position relative to recenter
-- [ ] Step 3 — Marker count badge moved to top-left
-- [ ] Step 4 — Wind arrow SVG styles
-- [ ] Step 5 — Wind gust label styles
-- [ ] Step 6 — Yardage card font size hierarchy
-- [ ] Step 7 — Yardage card position offset fix
-- [ ] Step 8 — GPS status locked-pill styles
-- [ ] Step 9 — Club group header + grid styles
-- [ ] Step 11 — Marker dot number label styles
-- [ ] Step 17 — Heading toggle button styles
-- [ ] Step 19 — Player heading arrow styles
+- [ ] Step 3 — Wind arrow SVG styles
+- [ ] Step 4 — Wind gust label styles
+- [ ] Step 5 — Yardage card font size hierarchy
+- [ ] Step 6 — Yardage card position offset fix
+- [ ] Step 7 — GPS status locked-pill styles
+- [ ] Step 12 — Heading toggle button styles
+- [ ] Step 14 — Player heading arrow styles
 
 ### index.html
-- [ ] Step 4 — Replace Unicode arrows with SVG arrow element
-- [ ] Step 5 — Add gust label element
-- [ ] Step 10 — Add `aria-label` and `title` to all icon buttons
-- [ ] Step 12 — Remove `user-scalable=no` from viewport meta
-- [ ] Step 17 — Add heading toggle button
+- [ ] Step 3 — Replace Unicode arrows with SVG arrow element
+- [ ] Step 4 — Add gust label element
+- [ ] Step 12 — Add heading toggle button
 
 ### js/app.js
-- [ ] Step 4 — Update `updateWindArrow()` to use SVG rotation
-- [ ] Step 5 — Update `fetchWeather()` to populate gust label
-- [ ] Step 8 — Add `locked-pill` class on GPS lock
-- [ ] Step 9 — Update `renderClubEditor()` with group headers
-- [ ] Step 11 — Add number text to marker dot elements
-- [ ] Step 12 — Add `map.doubleClickZoom.disable()` if needed
-- [ ] Step 13 — Add `compassHeading` and `headingLocked` state vars
-- [ ] Step 14 — Read `coords.heading` in watchPosition callback
-- [ ] Step 15 — Add `startCompass()`, `listenOrientation()`, `handleOrientation()`
-- [ ] Step 16 — Add `applyHeading()` function
-- [ ] Step 18 — Wire heading toggle button + update recenter listener
-- [ ] Step 19 — Add heading arrow to player dot + show in `applyHeading()`
+- [ ] Step 3 — Update `updateWindArrow()` to use SVG rotation
+- [ ] Step 4 — Update `fetchWeather()` to populate gust label
+- [ ] Step 7 — Add `locked-pill` class on GPS lock
+- [ ] Step 8 — Add `compassHeading` and `headingLocked` state vars
+- [ ] Step 9 — Read `coords.heading` in watchPosition callback
+- [ ] Step 10 — Add `startCompass()`, `listenOrientation()`, `handleOrientation()`
+- [ ] Step 11 — Add `applyHeading()` function
+- [ ] Step 13 — Wire heading toggle button + update recenter listener
+- [ ] Step 14 — Add heading arrow to player dot + show in `applyHeading()`
 
 ---
 
