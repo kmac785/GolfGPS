@@ -599,8 +599,8 @@ body {
     color: #fff;
     line-height: 1;
 }
-.card-pl-main.longer { color: #ff6b4a; }
-.card-pl-main.shorter { color: #4cd964; }
+.card-pl-main.longer { color: #4cd964; }
+.card-pl-main.shorter { color: #FF453A; }
 
 .card-pl-club {
     font-size: 17px;
