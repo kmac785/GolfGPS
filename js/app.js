@@ -47,20 +47,10 @@ function renderClubEditor() {
     clubs.forEach((c, i) => {
         const row = document.createElement('div');
         row.className = 'club-row';
-        row.innerHTML = `<span class="club-name">${c.club}</span><button type="button" class="club-stepper" data-idx="${i}" data-delta="-5">−</button><input type="number" data-idx="${i}" value="${c.carry}" inputmode="numeric" min="0" max="400"><button type="button" class="club-stepper" data-idx="${i}" data-delta="5">+</button>`;
+        row.innerHTML = `<span class="club-name">${c.club}</span><input type="number" data-idx="${i}" value="${c.carry}" inputmode="numeric" min="0" max="400">`;
         editor.appendChild(row);
     });
 }
-
-document.getElementById('clubEditor').addEventListener('click', (e) => {
-    const btn = e.target.closest('.club-stepper');
-    if (!btn) return;
-    const idx = btn.dataset.idx;
-    const delta = parseInt(btn.dataset.delta, 10);
-    const input = document.querySelector(`#clubEditor input[data-idx="${idx}"]`);
-    const current = parseInt(input.value, 10) || 0;
-    input.value = Math.max(0, Math.min(400, current + delta));
-});
 
 function readClubEditorValues() {
     const clubs = getClubs();

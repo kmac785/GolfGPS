@@ -141,16 +141,16 @@ body {
 .club-row input[type="number"] {
     width: 100%;
     min-width: 0;
-    padding: 8px 2px;
+    padding: 10px 8px;
     border-radius: 6px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     background: rgba(255, 255, 255, 0.08);
     color: #fff;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 600;
     font-family: inherit;
     outline: none;
-    text-align: center;
+    text-align: right;
     -moz-appearance: textfield;
 }
 .club-row input[type="number"]::-webkit-inner-spin-button,
@@ -160,27 +160,6 @@ body {
 }
 .club-row input[type="number"]:focus {
     border-color: rgba(100, 210, 255, 0.5);
-}
-.club-stepper {
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
-    border-radius: 6px;
-    color: #fff;
-    font-size: 18px;
-    line-height: 1;
-    width: 30px;
-    height: 30px;
-    min-width: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    flex-shrink: 0;
-    touch-action: manipulation;
-    font-family: inherit;
-}
-.club-stepper:active {
-    background: rgba(100, 210, 255, 0.25);
 }
 
 /* API key — collapsible secondary section */
