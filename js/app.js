@@ -148,6 +148,10 @@ function initApp(MAPTILER_KEY) {
     let temperature = null;
     let weatherFetchInterval = null;
 
+    // Compass/heading state
+    let compassHeading = null;
+    let headingLocked = false;
+
     // ============================================================
     // Initialize MapLibre with MapTiler Satellite tiles
     // ============================================================
@@ -232,6 +236,14 @@ function initApp(MAPTILER_KEY) {
                 const { latitude, longitude, accuracy, altitude, altitudeAccuracy } = pos.coords;
                 playerLocation = { lat: latitude, lng: longitude };
 
+                // GPS heading — only valid when moving (speed guard prevents standing-still jitter)
+                if (pos.coords.heading !== null &&
+                    !isNaN(pos.coords.heading) &&
+                    pos.coords.speed > 0.5) {
+                    compassHeading = pos.coords.heading;
+                    if (headingLocked) applyHeading();
+                }
+
                 // Use GPS altitude directly when accurate enough — always current, no API needed
                 if (altitude !== null && altitudeAccuracy !== null && altitudeAccuracy < 50) {
                     playerElevation = altitude; // meters, same unit as MapTiler
@@ -244,6 +256,7 @@ function initApp(MAPTILER_KEY) {
                 const accYards = Math.round(accuracy * 1.09361);
                 dotEl.className = 'dot locked';
                 textEl.textContent = `GPS Locked — ±${accYards}yd`;
+                statusEl.classList.add('locked-pill');
 
                 // Auto-hide GPS status after 3 seconds
                 clearTimeout(window._gpsHideTimer);
@@ -255,7 +268,7 @@ function initApp(MAPTILER_KEY) {
                 if (!playerMarker) {
                     const el = document.createElement('div');
                     el.className = 'player-dot-outer';
-                    el.innerHTML = '<div class="player-dot-inner"></div>';
+                    el.innerHTML = '<div class="player-heading-arrow" id="playerArrow"></div><div class="player-dot-inner"></div>';
                     playerMarker = new maplibregl.Marker({ element: el })
                         .setLngLat([longitude, latitude])
                         .addTo(map);
@@ -820,13 +833,83 @@ function initApp(MAPTILER_KEY) {
     });
 
     // ============================================================
+    // Compass / heading (Steps 10, 11)
+    // ============================================================
+    function startCompass() {
+        if (typeof DeviceOrientationEvent !== 'undefined' &&
+            typeof DeviceOrientationEvent.requestPermission === 'function') {
+            // iOS 13+ requires explicit permission prompt
+            DeviceOrientationEvent.requestPermission()
+                .then(state => {
+                    if (state === 'granted') listenOrientation();
+                })
+                .catch(console.warn);
+        } else {
+            listenOrientation();
+        }
+    }
+
+    function listenOrientation() {
+        window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+        window.addEventListener('deviceorientation', handleOrientation, true);
+    }
+
+    function handleOrientation(e) {
+        let heading = null;
+        if (e.absolute && e.alpha !== null) {
+            heading = (360 - e.alpha) % 360;
+        } else if (e.webkitCompassHeading !== undefined) {
+            heading = e.webkitCompassHeading; // Safari / iOS fallback
+        }
+        if (heading === null) return;
+        compassHeading = heading;
+        if (headingLocked) applyHeading();
+    }
+
+    function applyHeading() {
+        if (compassHeading === null || !playerLocation) return;
+        map.easeTo({
+            bearing: compassHeading,
+            duration: 300,
+            easing: t => t
+        });
+        const arrowEl = document.getElementById('playerArrow');
+        if (arrowEl) arrowEl.classList.add('visible');
+    }
+
+    // ============================================================
+    // Heading toggle button (Step 13)
+    // ============================================================
+    const headingBtnEl = document.getElementById('headingBtn');
+
+    headingBtnEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        headingLocked = !headingLocked;
+        headingBtnEl.classList.toggle('active', headingLocked);
+
+        if (headingLocked) {
+            startCompass();
+            applyHeading();
+        } else {
+            map.easeTo({ bearing: 0, duration: 400 });
+            const arrowEl = document.getElementById('playerArrow');
+            if (arrowEl) arrowEl.classList.remove('visible');
+        }
+    });
+
+    // ============================================================
     // Re-center
     // ============================================================
     document.getElementById('recenterBtn').addEventListener('click', (e) => {
         e.stopPropagation();
         if (playerLocation) {
             isFollowing = true;
-            map.flyTo({ center: [playerLocation.lng, playerLocation.lat], zoom: 17.5, duration: 1000 });
+            map.flyTo({
+                center: [playerLocation.lng, playerLocation.lat],
+                zoom: 17.5,
+                bearing: headingLocked ? (compassHeading || 0) : 0,
+                duration: 1000
+            });
         } else {
             document.getElementById('gpsStatus').classList.remove('hidden');
         }
