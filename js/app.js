@@ -199,11 +199,9 @@ function initApp(MAPTILER_KEY) {
         if (windDeg === null) return;
         const windTravelDeg = (windDeg + 180) % 360;
         const bearing = map.getBearing();
-        const rotation = `rotate(${windTravelDeg - bearing}deg)`;
-        document.getElementById('windBoxArrow').style.transform = rotation;
-        document.querySelectorAll('.wind-gust-arrow').forEach(el => {
-            el.style.transform = rotation;
-        });
+        const rotation = windTravelDeg - bearing;
+        const arrowEl = document.getElementById('windArrowSvg');
+        if (arrowEl) arrowEl.style.transform = `rotate(${rotation}deg)`;
     }
 
     const northBtn = document.getElementById('northBtn');
@@ -336,12 +334,16 @@ function initApp(MAPTILER_KEY) {
 
                 document.getElementById('windBoxSpeed').textContent = windSpeed;
                 document.getElementById('windBoxTemp').textContent = temperature != null ? temperature + '°F' : '--°F';
+                const gustEl = document.getElementById('windBoxGust');
+                if (gustEl) {
+                    if (windGust && windGust > windSpeed) {
+                        gustEl.textContent = `G: ${windGust}mph`;
+                        gustEl.style.display = '';
+                    } else {
+                        gustEl.style.display = 'none';
+                    }
+                }
                 document.getElementById('windBox').classList.add('visible');
-                // Show/hide gust arrows
-                const gustArrows = document.querySelectorAll('.wind-gust-arrow');
-                gustArrows.forEach(el => {
-                    el.style.display = (windGust && windGust > windSpeed) ? '' : 'none';
-                });
                 updateWindArrow();
             }
         } catch (e) {
