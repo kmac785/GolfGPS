@@ -34,9 +34,12 @@ body {
 }
 .setup-card {
     text-align: center;
-    padding: 32px 28px;
-    max-width: 340px;
+    padding: 24px 20px 32px;
+    max-width: 400px;
     width: 100%;
+    max-height: 100dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 .setup-icon svg {
     width: 64px;
@@ -118,38 +121,36 @@ body {
 .club-editor {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 6px;
-    max-height: 280px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    gap: 5px;
 }
 .club-row {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
     background: rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    padding: 6px 8px;
+    padding: 4px 6px;
 }
 .club-row .club-name {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: rgba(255, 255, 255, 0.7);
-    width: 32px;
+    width: 26px;
     flex-shrink: 0;
 }
 .club-row input[type="number"] {
     width: 100%;
-    padding: 6px 8px;
+    min-width: 0;
+    padding: 8px 2px;
     border-radius: 6px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     background: rgba(255, 255, 255, 0.08);
     color: #fff;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 600;
     font-family: inherit;
     outline: none;
-    text-align: right;
+    text-align: center;
     -moz-appearance: textfield;
 }
 .club-row input[type="number"]::-webkit-inner-spin-button,
@@ -159,6 +160,60 @@ body {
 }
 .club-row input[type="number"]:focus {
     border-color: rgba(100, 210, 255, 0.5);
+}
+.club-stepper {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 18px;
+    line-height: 1;
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    touch-action: manipulation;
+    font-family: inherit;
+}
+.club-stepper:active {
+    background: rgba(100, 210, 255, 0.25);
+}
+
+/* API key — collapsible secondary section */
+.api-key-section {
+    margin-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 12px;
+    text-align: left;
+}
+.api-key-section summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    user-select: none;
+}
+.api-key-section summary::-webkit-details-marker { display: none; }
+.api-key-section summary::after {
+    content: '▸';
+    font-size: 10px;
+    margin-left: auto;
+}
+.api-key-section[open] summary::after {
+    content: '▾';
+}
+.api-key-section[open] summary {
+    margin-bottom: 8px;
 }
 
 /* ==================== GPS status banner ==================== */
